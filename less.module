@@ -19,7 +19,7 @@ function _less_build(&$vars, $hook) {
       $files_keys = array_keys($files);
       foreach ($files_keys as $key => $input_file) {
         
-        if (substr($input_file, -9) == '.less.css') {
+        if (substr($input_file, -5) == '.less') {
           $output_file = $css_path .'/'. 'less_'. md5_file($base_path . $input_file) .'.css';
           
           if (!file_exists($base_path . $output_file)) {
@@ -44,6 +44,8 @@ function _less_build(&$vars, $hook) {
       
     }
   }
+  
+  $vars['messages'] .= theme('status_messages');
   
   $vars['styles'] = drupal_get_css($css);
   
