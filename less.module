@@ -1,0 +1,71 @@
+<?php
+// $Id$
+
+/**
+ * Builds the less cache
+ */
+function _less_build(&$vars, $hook) {
+  module_load_include('php', 'less', 'lessc.inc');
+  
+  $css = $vars['css'];
+  
+  $css_path = file_create_path('less');
+  file_check_directory($css_path, FILE_CREATE_DIRECTORY);
+  $base_path = $_SERVER['DOCUMENT_ROOT'] . base_path();
+  
+  foreach ($css as $media => $types) {
+    foreach ($types as $type => $files) {
+      
+      $files_keys = array_keys($files);
+      foreach ($files_keys as $key => $input_file) {
+        
+        if (substr($input_file, -9) == '.less.css') {
+          $output_file = $css_path .'/'. 'less_'. md5_file($base_path . $input_file) .'.css';
+          
+          if (!file_exists($base_path . $output_file)) {
+            try {
+              lessc::ccompile($base_path . $input_file, $base_path . $output_file);
+            } catch (exception $ex) {
+              drupal_set_message('LESS compile error: '.$ex->getMessage(), 'error');
+            }
+          }
+          
+          if (file_exists($base_path . $output_file)) {
+            array_splice($files_keys, $key, 1, $output_file);
+          }
+          
+        }
+        
+      }
+      
+      if (!empty($files)) {
+        $css[$media][$type] = array_combine($files_keys, $files);
+      }
+      
+    }
+  }
+  
+  $vars['styles'] = drupal_get_css($css);
+  
+}
+
+/**
+ * Implements MODULE_preprocess_page().
+ */
+function less_preprocess_page(&$vars, $hook) {
+  _less_build($vars, $hook);
+}
+
+/**
+ * Implements MODULE_preprocess_maintenance_page().
+ */
+function less_preprocess_maintenance_page(&$vars, $hook) {
+  _less_build($vars, $hook);
+}
+
+/**
+ * Implements HOOK_enable().
+ */
+function less_enable() {
+  drupal_rebuild_theme_registry();
+}
