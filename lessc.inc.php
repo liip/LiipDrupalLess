@@ -1250,6 +1250,3 @@ class lessc
 		return false;
 	}
 }
-
-
-?>
