@@ -24,6 +24,11 @@ class lessc {
 
 	private $env = array();
 
+	public $vPrefix = '@';
+	public $mPrefix = '$';
+	public $imPrefix = '!';
+	public $selfSelector = '&';
+
 	static private $precedence = array(
 		'+' => 0,
 		'-' => 0,
@@ -35,7 +40,7 @@ class lessc {
 
 	static private $dtypes = array('expression', 'variable', 'function', 'negative'); // types with delayed computation
 	static private $units = array(
-		'px', '%', 'in', 'cm', 'mm', 'em', 'ex', 'pt', 'pc', 's');
+		'px', '%', 'in', 'cm', 'mm', 'em', 'ex', 'pt', 'pc', 'ms', 's', 'deg');
 
 	public $importDisabled = false;
 	public $importDir = '';
@@ -46,7 +51,16 @@ class lessc {
 		$s = $this->seek();
 
 		// a property
-		if ($this->keyword($key) && $this->literal(':') && $this->propertyValue($value) && $this->end()) {
+		if ($this->keyword($key) && $this->assign() && $this->propertyValue($value) && $this->end()) {
+			// look for important prefix
+			if ($key{0} == $this->imPrefix && strlen($key) > 1) {
+				$key = substr($key, 1);
+				if ($value[0] == 'list' && $value[1] == ' ') {
+					$value[2][] = array('keyword', '!important');
+				} else {
+					$value = array('list', ' ', array($value, array('keyword', '!important')));
+				}
+			}
 			$this->append($key, $value);
 
 			if (count($this->env) == 1)
@@ -57,14 +71,24 @@ class lessc {
 			$this->seek($s);
 		}
 
-		// a font-face block
-		if (count($this->env) == 1 && $this->literal('@font-face') && $this->literal('{')) {
-			$this->push();
-			$this->set('__tags', array('@font-face'));
-			$this->set('__dontsave', true);
-			return true;
-		} else {
-			$this->seek($s);
+		// look for special css @ directives
+		if (count($this->env) == 1 && $this->count < strlen($this->buffer) && $this->buffer[$this->count] == '@') {
+			// a font-face block
+			if ($this->literal('@font-face') && $this->literal('{')) {
+				$this->push();
+				$this->set('__tags', array('@font-face'));
+				$this->set('__dontsave', true);
+				return true;
+			} else {
+				$this->seek($s);
+			}
+
+			// charset
+			if ($this->literal('@charset') && $this->propertyValue($value) && $this->end()) {
+				return "@charset ".$this->compileValue($value).";\n";
+			} else {
+				$this->seek($s);
+			}
 		}
 
 		// opening abstract block
@@ -72,7 +96,7 @@ class lessc {
 			$this->push();
 
 			// move out of variable scope
-			if ($tag{0} == "@") $tag[0] = "%";
+			if ($tag{0} == $this->vPrefix) $tag[0] = $this->mPrefix;
 
 			$this->set('__tags', array($tag));
 			if (isset($args)) $this->set('__args', $args);
@@ -86,7 +110,7 @@ class lessc {
 		if ($this->tags($tags) && $this->literal('{')) {
 			//  move @ tags out of variable namespace!
 			foreach($tags as &$tag) {
-				if ($tag{0} == "@") $tag[0] = "%";
+				if ($tag{0} == $this->vPrefix) $tag[0] = $this->mPrefix;
 			}
 
 			$this->push();
@@ -108,7 +132,7 @@ class lessc {
 			if (isset($env['__args'])) {
 				foreach ($env['__args'] as $arg) {
 					if (isset($arg[1])) {
-						$this->prepend('@'.$arg[0], $arg[1]);
+						$this->prepend($this->vPrefix.$arg[0], $arg[1]);
 					}
 				}
 			}
@@ -148,8 +172,8 @@ class lessc {
 		}
 
 		// setting variable
-		if ($this->variable($name) && $this->literal(':') && $this->propertyValue($value) && $this->end()) {
-			$this->append('@'.$name, $value);
+		if ($this->variable($name) && $this->assign() && $this->propertyValue($value) && $this->end()) {
+			$this->append($this->vPrefix.$name, $value);
 			return true;
 		} else {
 			$this->seek($s);
@@ -163,7 +187,7 @@ class lessc {
 			// if we have arguments then insert them
 			if (!empty($env['__args'])) {
 				foreach($env['__args'] as $arg) {
-					$name = $arg[0];
+					$vname = $this->vPrefix.$arg[0];
 					$value = is_array($argv) ? array_shift($argv) : null;
 					// copy default value if there isn't one supplied
 					if ($value == null && isset($arg[1]))
@@ -172,34 +196,40 @@ class lessc {
 					// if ($value == null) continue; // don't define so it can search up
 
 					// create new entry if var doesn't exist in scope
-					if (isset($env['@'.$name])) {
-						array_unshift($env['@'.$name], $value);
+					if (isset($env[$vname])) {
+						array_unshift($env[$vname], $value);
 					} else {
 						// new element
-						$env['@'.$name] = array($value);
+						$env[$vname] = array($value);
 					}
 				}
 			}
 
 			// set all properties
 			ob_start();
+			$blocks = array();
 			foreach ($env as $name => $value) {
 				// skip the metatdata
 				if (preg_match('/^__/', $name)) continue;
 
-				// if it is a block then render it
-				if (!isset($value[0])) {
-					$rtags = $this->multiplyTags(array($name));
-					echo $this->compileBlock($rtags, $value);
-				}
+				// if it is a block, remember it to compile after everything
+				// is mixed in
+				if (!isset($value[0]))
+					$blocks[] = array($name, $value);
 
-				// copy the block's data
+				// copy the data
 				// don't overwrite previous value, look in current env for name
 				if ($this->get($name, array(end($this->env)))) {
 					while ($tval = array_shift($value))
 						$this->append($name, $tval);
 				} else 
 					$this->set($name, $value); 
+			}
+
+			// render sub blocks
+			foreach ($blocks as $b) {
+				$rtags = $this->multiplyTags(array($b[0]));
+				echo $this->compileBlock($rtags, $b[1]);
 			}
 
 			return ob_get_clean();
@@ -223,8 +253,13 @@ class lessc {
 		$rtags = array();
 		foreach ($parents as $p) {
 			foreach ($tags as $t) {
-				if ($t{0} == '%') continue; // skip functions
-				$rtags[] = trim($p.($t{0} == ':' ? '' : ' ').$t);
+				if ($t{0} == $this->mPrefix) continue; // skip functions
+				$d = ' ';
+				if ($t{0} == ':' || $t{0} == $this->selfSelector) {
+					$t = ltrim($t, $this->selfSelector);
+					$d = '';
+				}
+				$rtags[] = trim($p.$d.$t);
 			}
 		}
 
@@ -322,7 +357,7 @@ class lessc {
 		// see if there is a negation
 		$s = $this->seek();
 		if ($this->literal('-', false) && $this->variable($vname)) {
-			$value = array('negative', array('variable', '@'.$vname));
+			$value = array('negative', array('variable', $this->vPrefix.$vname));
 			return true;
 		} else {
 			$this->seek($s);
@@ -359,7 +394,7 @@ class lessc {
 
 		// try a variable
 		if ($this->variable($vname)) {
-			$value = array('variable', '@'.$vname);
+			$value = array('variable', $this->vPrefix.$vname);
 			return true;
 		}
 
@@ -408,7 +443,7 @@ class lessc {
 		// either it is a variable or a property
 		// why is a property wrapped in quotes, who knows!
 		if ($this->variable($name)) {
-			$name = '@'.$name;
+			$name = $this->vPrefix.$name;
 		} elseif($this->literal("'") && $this->keyword($name) && $this->literal("'")) {
 			// .. $this->count is messed up if we wanted to test another access type
 		} else {
@@ -428,9 +463,9 @@ class lessc {
 	// a string 
 	function string(&$string, &$d = null) {
 		$s = $this->seek();
-		if ($this->literal('"')) {
+		if ($this->literal('"', false)) {
 			$delim = '"';
-		} else if($this->literal("'")) {
+		} else if($this->literal("'", false)) {
 			$delim = "'";
 		} else {
 			return false;
@@ -528,7 +563,7 @@ class lessc {
 		$values = array();
 		while ($this->variable($vname)) {
 			$arg = array($vname);
-			if ($this->literal(':') && $this->propertyValue($value)) {
+			if ($this->assign() && $this->propertyValue($value)) {
 				$arg[] = $value;
 				// let the : slide if there is no value
 			}
@@ -578,10 +613,27 @@ class lessc {
 	function func(&$func) {
 		$s = $this->seek();
 
-		if ($this->keyword($fname) && $this->literal('(')) {
-			if ($fname == 'url' || !$this->propertyValue($args)) {
+		if ($this->match('([\w\-_][\w\-_:\.]*)', $m) && $this->literal('(')) {
+			$fname = $m[1];
+			if ($fname == 'url') {
 				$this->to(')', $content, true);
 				$args = array('string', $content);
+			} else {
+				$args = array();
+				while (true) {
+					$ss = $this->seek();
+					if ($this->keyword($name) && $this->literal('=') && $this->expressionList($value)) {
+						$args[] = array('list', '=', array(array('keyword', $name), $value));
+					} else {
+						$this->seek($ss);
+						if ($this->expressionList($value)) {
+							$args[] = $value;
+						}
+					}
+
+					if (!$this->literal(',')) break;
+				}
+				$args = array('list', ',', $args);
 			}
 
 			if ($this->literal(')')) {
@@ -597,10 +649,15 @@ class lessc {
 	// consume a less variable
 	function variable(&$name) {
 		$s = $this->seek();
-		if ($this->literal('@', false) && $this->keyword($name)) {
+		if ($this->literal($this->vPrefix, false) && $this->keyword($name)) {
 			return true;	
 		}
 		return false;
+	}
+
+	// consume an assignment operator
+	function assign() {
+		return $this->literal(':') || $this->literal('=');
 	}
 
 	// consume a keyword
@@ -646,7 +703,7 @@ class lessc {
 			// todo: change this, poor hack
 			// make a better name storage system!!! (value types are fine)
 			// but.. don't render special properties (blocks, vars, metadata)
-			if (isset($value[0]) && $name{0} != '@' && $name != '__args') {
+			if (isset($value[0]) && $name{0} != $this->vPrefix && $name != '__args') {
 				echo $this->compileProperty($name, $value, 1)."\n";
 				$props++;
 			}
@@ -734,6 +791,13 @@ class lessc {
 		case 'function':
 			// [1] - function name
 			// [2] - some value representing arguments
+
+			// see if there is a library function for this func
+			$f = array($this, 'lib_'.$value[1]);
+			if (is_callable($f)) {
+				return call_user_func($f, $value[2]);
+			}
+
 			return $value[1].'('.$this->compileValue($value[2]).')';
 
 		default: // assumed to be unit	
@@ -741,6 +805,22 @@ class lessc {
 		}
 	}
 
+	function lib_quote($arg) {
+		return '"'.$this->compileValue($arg).'"';
+	}
+
+	function lib_unquote($arg) {
+		$out = $this->compileValue($arg);
+		if ($this->quoted($out)) $out = substr($out, 1, -1);
+		return $out;
+	}
+
+	// is a string surrounded in quotes? returns the quoting char if true
+	function quoted($s) {
+		if (preg_match('/^("|\').*?\1$/', $s, $m))
+			return $m[1];
+		else return false;
+	}
 
 	// convert rgb, rgba into color type suitable for math
 	// todo: add hsl
@@ -817,18 +897,12 @@ class lessc {
 
 		// concatenate strings
 		if ($op == '+' && $left[0] == 'string') {
-			// todo: normalize string quotes
 			$append = $this->compileValue($right);
-			if ($right[0] == 'string' && ($append{0} == '"' || $append{0} == "'")) {
-				$append = substr($append, 1, -1);
-			}
+			if ($this->quoted($append)) $append = substr($append, 1, -1);
 
 			$lhs = $this->compileValue($left);
-			$q = '';
-			if ($left[0] == 'string' && ($lhs{0} == '"' || $lhs{0} == "'")) {
-				$q = $lhs{0};
-				$lhs = substr($lhs, 1, -1);
-			}
+			if ($q = $this->quoted($lhs)) $lhs = substr($lhs, 1, -1);
+			if (!$q) $q = '';
 
 			return array('string', $q.$lhs.$append.$q);
 		}
@@ -1026,7 +1100,7 @@ class lessc {
 
 		//  move @ tags out of variable namespace
 		foreach($path as &$tag)
-			if ($tag{0} == "@") $tag[0] = "%";
+			if ($tag{0} == $this->vPrefix) $tag[0] = $this->mPrefix;
 
 		$env = $this->get(array_shift($path));
 		while ($sub = array_shift($path)) {
@@ -1222,3 +1296,7 @@ class lessc {
 	}
 
 }
+
+
+
+?>
