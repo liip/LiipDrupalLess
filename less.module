@@ -5,15 +5,12 @@
  * Builds the less cache
  */
 function _less_build(&$vars, $hook) {
-  module_load_include('php', 'less', 'lessc.inc');
   
   $css = $vars['css'];
   
   $css_path = file_create_path('less');
   file_check_directory($css_path, FILE_CREATE_DIRECTORY);
   $base_path = $_SERVER['DOCUMENT_ROOT'] . base_path();
-  
-  $less = new lessc();
   
   foreach ($css as $media => $types) {
     foreach ($types as $type => $files) {
@@ -25,6 +22,10 @@ function _less_build(&$vars, $hook) {
           $output_file = $css_path .'/'. 'less_'. md5_file($base_path . $input_file) .'.css';
           
           if (!file_exists($base_path . $output_file)) {
+            
+            require_once('lessphp/lessc.inc.php');
+            
+            $less = new lessc();
             
             $contents = drupal_load_stylesheet($input_file, false);
             
