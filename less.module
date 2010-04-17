@@ -55,7 +55,8 @@ function _less_build(&$vars, $hook) {
   
   $vars['messages'] .= theme('status_messages');
   
-  $vars['styles'] = drupal_get_css($css);
+  $vars['css'] = $css;
+  $vars['styles'] = drupal_get_css($vars['css']);
   
 }
 
