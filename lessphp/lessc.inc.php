@@ -90,6 +90,14 @@ class lessc {
 			}
 		}
 
+		// setting variable
+		if ($this->variable($name) && $this->assign() && $this->propertyValue($value) && $this->end()) {
+			$this->append($this->vPrefix.$name, $value);
+			return true;
+		} else {
+			$this->seek($s);
+		}
+
 		// opening abstract block
 		if ($this->tag($tag, true) && $this->argumentDef($args) && $this->literal('{')) {
 			$this->push();
@@ -168,14 +176,6 @@ class lessc {
 			}
 
 			return '@import url("'.$url.'")'.($media ? ' '.$media : '').";\n";
-		}
-
-		// setting variable
-		if ($this->variable($name) && $this->assign() && $this->propertyValue($value) && $this->end()) {
-			$this->append($this->vPrefix.$name, $value);
-			return true;
-		} else {
-			$this->seek($s);
 		}
 
 		// mixin/function expand
@@ -593,6 +593,20 @@ class lessc {
 		return true;
 	}
 
+	// a bracketed value (contained within in a tag definition)
+	function tagBracket(&$value) {
+		$s = $this->seek();
+		if ($this->literal('[') && $this->to(']', $c, true) && $this->literal(']', false)) {
+			$value .= '['.$c.']';
+			// whitespace?
+			if ($this->match('', $_)) $value .= $_[0];
+			return true;
+		}
+
+		$this->seek($s);
+		return false;
+	}
+
 	// a single tag
 	function tag(&$tag, $simple = false) {
 		if ($simple)
@@ -601,17 +615,12 @@ class lessc {
 			$chars = '^,;{}[';
 
 		$tag = '';
+		if ($this->tagBracket($first)) $tag .= $first;
 		while ($this->match('(['.$chars.'0-9]['.$chars.']*)', $m)) {
-			$tag.= $m[1];
+			$tag .= $m[1];
 			if ($simple) break;
 
-			$s = $this->seek();
-			if ($this->literal('[') && $this->to(']', $c, true) && $this->literal(']')) {
-				$tag .= '['.$c.'] ';
-			} else {
-				$this->seek($s);
-				break;
-			}
+			if ($this->tagBracket($brack)) $tag .= $brack;
 		}
 		$tag = trim($tag);
 		if ($tag == '') return false;
@@ -662,6 +671,7 @@ class lessc {
 		if ($this->literal($this->vPrefix, false) && $this->keyword($name)) {
 			return true;	
 		}
+
 		return false;
 	}
 
@@ -759,7 +769,7 @@ class lessc {
 			
 			// search for inline variables to replace
 			$replace = array();
-			if (preg_match_all('/{(@[\w-_][0-9\w-_]*)}/', $value[1], $m)) {
+			if (preg_match_all('/{('.$this->preg_quote($this->vPrefix).'[\w-_][0-9\w-_]*?)}/', $value[1], $m)) {
 				foreach($m[1] as $name) {
 					if (!isset($replace[$name]))
 						$replace[$name] = $this->compileValue(array('variable', $name));
@@ -772,6 +782,7 @@ class lessc {
 				}
 				$value[1] = str_replace('{'.$var.'}', $val, $value[1]);
 			}
+
 
 			return $value[1];
 		case 'color':
@@ -1229,7 +1240,7 @@ class lessc {
 
 	function throwParseError($msg = 'parse error') {
 		$line = $this->line + substr_count(substr($this->buffer, 0, $this->count), "\n");
-		if ($this->peek("(.*?)\n", $m))
+		if ($this->peek("(.*?)(\n|$)", $m))
 			throw new exception($msg.': failed at `'.$m[1].'` line: '.$line);
 	}
 
