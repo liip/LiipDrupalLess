@@ -15,13 +15,13 @@ function less_css_alter(&$css) {
     
     if (substr($input_file, -5) == '.less') {
       
-      $css_path = $file_path .'/less/'. dirname($input_file);
+      $css_path = $file_path . '/less/' . dirname($input_file);
       
       if (!is_dir($css_path)) {
         drupal_mkdir($css_path, 0775, TRUE);
       }
       
-      $output_file = $css_path .'/'. basename($input_file, '.less') .'.css';
+      $output_file = $css_path . '/' . basename($input_file, '.less') . '.css';
       
       if (!file_exists($base_path . $output_file) || filemtime($base_path . $input_file) > filemtime($base_path . $output_file)) {
         
@@ -31,7 +31,7 @@ function less_css_alter(&$css) {
         
         $contents = drupal_load_stylesheet($input_file, false);
         
-        $base = base_path() . dirname($input_file) .'/';
+        $base = base_path() . dirname($input_file) . '/';
         _drupal_build_css_path(NULL, $base);
         // Prefix all paths within this CSS file, ignoring external and absolute paths.
         $data = preg_replace_callback('/url\([\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\)/i', '_drupal_build_css_path', $contents);
