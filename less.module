@@ -8,7 +8,6 @@ function _less_build(&$vars, $hook) {
   
   $css = $vars['css'];
   
-  $base_path = $_SERVER['DOCUMENT_ROOT'] . base_path();
   $file_path = file_directory_path();
   
   foreach ($css as $media => $types) {
@@ -26,8 +25,9 @@ function _less_build(&$vars, $hook) {
           }
           
           $output_file = $css_path .'/'. basename($input_file, '.less') .'.css';
+          $real_output_file = realpath($output_file);
           
-          if (!file_exists($base_path . $output_file) || filemtime($base_path . $input_file) > filemtime($base_path . $output_file)) {
+          if (!file_exists($real_output_file) || filemtime(realpath($input_file)) > filemtime($real_output_file)) {
             
             require_once('lessphp/lessc.inc.php');
             
@@ -44,7 +44,7 @@ function _less_build(&$vars, $hook) {
             
           }
           
-          if (file_exists($base_path . $output_file)) {
+          if (file_exists($real_output_file)) {
             array_splice($files_keys, $key, 1, $output_file);
           }
           
