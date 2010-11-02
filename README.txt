@@ -1,3 +1,5 @@
+// $Id$
+
 LESS CSS Preprocessor
 
 Files in lessphp/ are from the library at http://leafo.net/lessphp/
@@ -13,4 +15,4 @@ drupal_add_css('filename.less')
 
 or
 
-stylesheets[all] = filename.less
+stylesheets[all][] = filename.less
