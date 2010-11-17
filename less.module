@@ -24,7 +24,10 @@ function _less_build(&$vars, $hook) {
             @mkdir($css_path, 0775, TRUE);
           }
           
-          $output_file = $css_path .'/'. basename($input_file, '.less') .'.css';
+          $output_file = $css_path .'/'. basename($input_file, '.less');
+          if (substr($output_file, -4) != '.css') {
+            $output_file .= '.css';
+          }
           $real_output_file = realpath($output_file);
           
           if (!file_exists($real_output_file) || filemtime(realpath($input_file)) > filemtime($real_output_file)) {
@@ -39,8 +42,18 @@ function _less_build(&$vars, $hook) {
             _drupal_build_css_path(NULL, $base);
             // Prefix all paths within this CSS file, ignoring external and absolute paths.
             $data = preg_replace_callback('/url\([\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\)/i', '_drupal_build_css_path', $contents);
-
-            file_save_data($less->parse($data), $output_file, FILE_EXISTS_REPLACE);
+            
+            try {
+              $output_data = $less->parse($data);
+              file_save_data($output_data, $output_file, FILE_EXISTS_REPLACE);
+            }
+            catch (Exception $e) {
+              $message = 'LESS ERROR: '. $e->getMessage() .'; LINE: '. $less->getLine();
+              watchdog('LESS', $message, array(), WATCHDOG_ERROR);
+              if (user_access('access administration pages')) {
+                drupal_set_message($message, 'error');
+              }
+            }
             
           }
           

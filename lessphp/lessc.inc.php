@@ -1315,9 +1315,11 @@ class lessc {
 
 		return false;
 	}
+	
+	public function getLine() {
+	  return $this->line;
+	}
 
 }
 
 
-
-?>
