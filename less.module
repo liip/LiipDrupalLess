@@ -48,7 +48,7 @@ function _less_build(&$vars, $hook) {
               file_save_data($output_data, $output_file, FILE_EXISTS_REPLACE);
             }
             catch (Exception $e) {
-              $message = 'LESS ERROR: '. $e->getMessage() .'; LINE: '. $less->getLine();
+              $message = 'LESS ERROR: '. $e->getMessage() .', '. $input_file;
               watchdog('LESS', $message, array(), WATCHDOG_ERROR);
               if (user_access('access administration pages')) {
                 drupal_set_message($message, 'error');
