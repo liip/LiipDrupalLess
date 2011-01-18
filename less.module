@@ -46,7 +46,7 @@ function _less_build(&$vars, $hook) {
           $css_path = $less_path .'/'. dirname($input_file);
 
           if (!is_dir($css_path)) {
-            @mkdir($css_path, 0775, TRUE);
+            @mkdir($css_path, 0777, TRUE);
           }
 
           $output_file = $css_path .'/'. basename($input_file, '.less');
@@ -54,7 +54,7 @@ function _less_build(&$vars, $hook) {
             $output_file .= '.css';
           }
 
-          if ((!file_exists($output_file) || filemtime($input_file) > filemtime($output_file))) {
+          if (!file_exists($output_file)) {
             require_once('lessphp/lessc.inc.php');
 
             $less = new lessc();
@@ -128,23 +128,36 @@ function less_enable() {
  * Lifted from imagecache, with thanks to dopry/drewish.
  */
 function _less_recursive_delete($path) {
-  if (is_file($path) || is_dir($path) || is_link($path)) {
-    if (is_file($path) || is_link($path)) {
-      unlink($path);
-    }
-    elseif (is_dir($path)) {
-      $d = dir($path);
-      while (($entry = $d->read()) !== FALSE) {
-        if ($entry == '.' || $entry == '..') continue;
-        $entry_path = $path .'/'. $entry;
-        _less_recursive_delete($entry_path);
-      }
-      $d->close();
-      rmdir($path);
-    }
-    else {
-      watchdog('LESS', 'Unknown file type(%path) stat: %stat ',
-                array('%path' => $path,  '%stat' => print_r(stat($path),1)), WATCHDOG_ERROR);
-    }
+  if (is_file($path) || is_link($path)) {
+    unlink($path);
   }
+  elseif (is_dir($path)) {
+    $d = dir($path);
+    while (($entry = $d->read()) !== FALSE) {
+      if ($entry == '.' || $entry == '..') continue;
+      $entry_path = $path .'/'. $entry;
+      _less_recursive_delete($entry_path);
+    }
+    $d->close();
+    rmdir($path);
+  }
+  else {
+    watchdog('LESS', 'Unknown file type(%path) stat: %stat ', array('%path' => $path,  '%stat' => print_r(stat($path),1)), WATCHDOG_ERROR);
+  }
+}
+
+/**
+ * Implementation of hook_flush_caches().
+ * 
+ * Flushes compiled LESS files during cache flush, except during cron.
+ * 
+ * @return An array of cache table names.
+ */
+function less_flush_caches() {
+  $semaphore = variable_get('cron_semaphore', FALSE);
+  if (!$semaphore) {
+    // Delete all generated files.
+    _less_recursive_delete(file_directory_path() . '/less');
+  }
+  return array();
 }
