@@ -2,11 +2,19 @@
 // $Id$
 
 /**
+ * @file
+ * Handles compiling of .less files.
+ *
+ * The theme system allows for nearly all output of the Drupal system to be
+ * customized by user themes.
+ */
+
+/**
  * Implements hook_menu().
  */
 function less_menu() {
   $items = array();
-  
+
   $items['admin/settings/less'] = array(
     'title' => 'LESS settings',
     'description' => 'Administer LESS settings',
@@ -24,24 +32,24 @@ function less_menu() {
  * Builds the less cache
  */
 function _less_build(&$vars, $hook) {
-  
+
   $css = $vars['css'];
 
-  $less_path = file_directory_path() . '/less';
-  
-  // Flush compiled LESS files if developer mode is enabled 
+  $less_path = file_directory_path() .'/less';
+
+  // Flush compiled LESS files if developer mode is enabled
   if (variable_get('less_devel', FALSE)) {
     _less_recursive_delete($less_path);
     drupal_set_message(t('LESS files are being regenerated on every request. Remember to <a href="!url">turn off</a> this feature on production websites.', array("!url" => url('admin/settings/less'))), 'status');
   }
-  
+
   foreach ($css as $media => $types) {
     foreach ($types as $type => $files) {
 
       $files_keys = array_keys($files);
       foreach ($files_keys as $key => $input_file) {
 
-        if (substr($input_file, -5) == '.less') {
+        if (drupal_substr($input_file, -5) == '.less') {
 
           $css_path = $less_path .'/'. dirname($input_file);
 
@@ -50,7 +58,7 @@ function _less_build(&$vars, $hook) {
           }
 
           $output_file = $css_path .'/'. basename($input_file, '.less');
-          if (substr($output_file, -4) != '.css') {
+          if (drupal_substr($output_file, -4) != '.css') {
             $output_file .= '.css';
           }
 
@@ -59,7 +67,7 @@ function _less_build(&$vars, $hook) {
 
             $less = new lessc();
 
-            $contents = drupal_load_stylesheet($input_file, false);
+            $contents = drupal_load_stylesheet($input_file, FALSE);
 
             $base = base_path() . dirname($input_file) .'/';
             _drupal_build_css_path(NULL, $base);
@@ -142,15 +150,15 @@ function _less_recursive_delete($path) {
     rmdir($path);
   }
   else {
-    watchdog('LESS', 'Unknown file type(%path) stat: %stat ', array('%path' => $path,  '%stat' => print_r(stat($path),1)), WATCHDOG_ERROR);
+    watchdog('LESS', 'Unknown file type(%path) stat: %stat ', array('%path' => $path,  '%stat' => print_r(stat($path), 1)), WATCHDOG_ERROR);
   }
 }
 
 /**
  * Implementation of hook_flush_caches().
- * 
+ *
  * Flushes compiled LESS files during cache flush, except during cron.
- * 
+ *
  * @return An array of cache table names.
  */
 function less_flush_caches() {
