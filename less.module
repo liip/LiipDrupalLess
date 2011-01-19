@@ -6,7 +6,7 @@
  */
 function less_menu() {
   $items = array();
-  
+
   $items['admin/config/development/less'] = array(
     'title' => 'LESS settings',
     'description' => 'Administer LESS settings',
@@ -23,40 +23,40 @@ function less_menu() {
  * Builds the less cache
  */
 function less_css_alter(&$css) {
-  
+
   $less_path = file_default_scheme() . '://less';
-  
-  // Flush compiled LESS files if developer mode is enabled 
+
+  // Flush compiled LESS files if developer mode is enabled
   if (variable_get('less_devel', FALSE) && user_access('access administration pages')) {
     file_unmanaged_delete_recursive($less_path);
     drupal_set_message(t('LESS files are being regenerated on every request. Remember to <a href="!url">turn off</a> this feature on production websites.', array("!url" => url('admin/config/development/less'))), 'status');
   }
-  
+
   $files_keys = array_keys($css);
   $files_values = array_values($css);
   foreach ($files_keys as $key => $input_file) {
-    
-    if (substr($input_file, -5) == '.less') {
-      
+
+    if (drupal_substr($input_file, -5) == '.less') {
+
       $css_path = $less_path . '/' . dirname($input_file);
-      
+
       if (!is_dir($css_path)) {
         drupal_mkdir($css_path, 0777, TRUE);
       }
-      
+
       $output_file = $css_path . '/' . basename($input_file, '.less');
-      if (substr($output_file, -4) != '.css') {
+      if (drupal_substr($output_file, -4) != '.css') {
         $output_file .= '.css';
       }
-      
+
       if (!file_exists($output_file)) {
-        
+
         require_once('lessphp/lessc.inc.php');
-        
+
         $less = new lessc();
-        
-        $contents = drupal_load_stylesheet($input_file, false);
-        
+
+        $contents = drupal_load_stylesheet($input_file, TRUE);
+
         // Build the base URL of this CSS file: start with the full URL.
         $css_base_url = file_create_url($input_file);
         // Move to the parent.
@@ -66,11 +66,11 @@ function less_css_alter(&$css) {
         if (substr($css_base_url, 0, strlen($GLOBALS['base_root'])) == $GLOBALS['base_root']) {
           $css_base_url = substr($css_base_url, strlen($GLOBALS['base_root']));
         }
-        
+
         _drupal_build_css_path(NULL, $css_base_url . '/');
         // Prefix all paths within this CSS file, ignoring external and absolute paths.
         $data = preg_replace_callback('/url\(\s*[\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\s*\)/i', '_drupal_build_css_path', $contents);
-        
+
         try {
           $output_data = $less->parse($data);
           file_save_data($output_data, $output_file, FILE_EXISTS_REPLACE);
@@ -82,27 +82,27 @@ function less_css_alter(&$css) {
             drupal_set_message($message, 'error');
           }
         }
-        
+
       }
-      
+
       if (file_exists($output_file)) {
         array_splice($files_keys, $key, 1, $output_file);
         $files_values[$key]['data'] = $output_file;
       }
-      
+
     }
-    
+
   }
-  
+
   $css = array_combine($files_keys, $files_values);
-  
+
 }
 
 /**
- * Implementation of hook_flush_caches().
- * 
+ * Implements of hook_flush_caches().
+ *
  * Flushes compiled LESS files during cache flush, except during cron.
- * 
+ *
  * @return An array of cache table names.
  */
 function less_flush_caches() {
