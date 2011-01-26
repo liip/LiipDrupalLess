@@ -55,7 +55,7 @@ function less_css_alter(&$css) {
 
         $less = new lessc();
 
-        $contents = drupal_load_stylesheet($input_file, TRUE);
+        $contents = drupal_load_stylesheet($input_file, FALSE);
 
         // Build the base URL of this CSS file: start with the full URL.
         $css_base_url = file_create_url($input_file);
