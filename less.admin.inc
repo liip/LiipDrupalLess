@@ -7,8 +7,7 @@
  *
  */
 
-function less_settings(&$form_state) {
-  $form = array();
+function less_settings($form, &$form_state) {
 
   $form['less_flush'] = array(
     '#type' => 'fieldset',
