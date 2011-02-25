@@ -1,4 +1,3 @@
-; $Id$
 
 name = "LESS CSS Preprocessor"
 description = "Allows themes or modules to use LESS files."

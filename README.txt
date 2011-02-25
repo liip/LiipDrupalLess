@@ -1,4 +1,3 @@
-// $Id$
 
 LESS CSS Preprocessor
 
