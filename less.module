@@ -35,7 +35,7 @@ function less_css_alter(&$css) {
   $less_path = file_default_scheme() . '://less';
 
   // Flush compiled LESS files if developer mode is enabled
-  if (variable_get('less_devel', FALSE) && user_access('access administration pages')) {
+  if (variable_get('less_devel', FALSE)) {
     file_unmanaged_delete_recursive($less_path);
     if (user_access('administer site configuration') && flood_is_allowed('less_devel_warning', 1)) {
       flood_register_event('less_devel_warning');
