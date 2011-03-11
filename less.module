@@ -104,8 +104,10 @@ function _less_build(&$vars, $hook) {
 
     }
   }
-
-  $vars['messages'] .= theme('status_messages');
+  
+  if ($vars['show_messages']) {
+    $vars['messages'] .= theme('status_messages');
+  }
 
   $vars['css'] = $css;
   $vars['styles'] = drupal_get_css($vars['css']);
