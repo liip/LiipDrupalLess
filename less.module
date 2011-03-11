@@ -48,8 +48,9 @@ function less_css_alter(&$css) {
   foreach ($files_keys as $key => $input_file) {
 
     if (drupal_substr($input_file, -5) == '.less') {
-
-      $css_path = $less_path . '/' . dirname($input_file);
+      
+      $file_uri = file_uri_target($input_file);
+      $css_path = $less_path . '/' . dirname($file_uri ? $file_uri : $input_file);
 
       if (!is_dir($css_path)) {
         drupal_mkdir($css_path, 0777, TRUE);
