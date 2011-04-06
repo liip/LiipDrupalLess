@@ -31,7 +31,20 @@ function less_menu() {
  * Builds the less cache
  */
 function less_css_alter(&$css) {
-
+  $lessphp_include = '';
+  
+  if (module_exists('libraries')) {
+    if ($lessphp_path = libraries_get_path('lessphp')) {
+      if (file_exists($lessphp_path .'/lessc.inc.php')) {
+        $lessphp_include = $lessphp_path .'/lessc.inc.php';
+      }
+    }
+  }
+  
+  if (empty($lessphp_include)) {
+    $lessphp_include = 'lessphp/lessc.inc.php';
+  }
+  
   $less_path = file_default_scheme() . '://less';
 
   // Flush compiled LESS files if developer mode is enabled
@@ -62,8 +75,7 @@ function less_css_alter(&$css) {
       }
 
       if (!file_exists($output_file)) {
-
-        require_once('lessphp/lessc.inc.php');
+        require_once($lessphp_include);
 
         $less = new lessc();
 
