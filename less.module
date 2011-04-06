@@ -31,7 +31,20 @@ function less_menu() {
  * Builds the less cache
  */
 function _less_build(&$vars, $hook) {
-
+  $lessphp_include = '';
+  
+  if (module_exists('libraries')) {
+    if ($lessphp_path = libraries_get_path('lessphp')) {
+      if (file_exists($lessphp_path .'/lessc.inc.php')) {
+        $lessphp_include = $lessphp_path .'/lessc.inc.php';
+      }
+    }
+  }
+  
+  if (empty($lessphp_include)) {
+    $lessphp_include = 'lessphp/lessc.inc.php';
+  }
+  
   $css = $vars['css'];
 
   $less_path = file_directory_path() .'/less';
@@ -65,7 +78,7 @@ function _less_build(&$vars, $hook) {
           }
 
           if (!file_exists($output_file)) {
-            require_once('lessphp/lessc.inc.php');
+            require_once($lessphp_include);
 
             $less = new lessc();
 
