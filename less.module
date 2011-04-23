@@ -65,11 +65,18 @@ function less_css_alter(&$css) {
       $file_uri = file_uri_target($input_file);
       $css_path = $less_path . '/' . dirname($file_uri ? $file_uri : $input_file);
 
-      if (!is_dir($css_path)) {
-        drupal_mkdir($css_path, 0777, TRUE);
+      if (!is_dir($css_path) && !file_prepare_directory($css_path, FILE_CREATE_DIRECTORY)) {
+        // There is a problem with the directory.
+        $param = array('%dir' => $css_path);
+        if (user_access('administer site configuration')) {
+          drupal_set_message(t('LESS could not create a directory in %dir', $param), 'error');
+        }
+        watchdog('LESS', t('LESS could not create a directory in %dir', $param), array(), WATCHDOG_ERROR);
+        return;
       }
 
       $output_file = $css_path . '/' . basename($input_file, '.less');
+      // correct file names of files not following the .css.less naming convention
       if (drupal_substr($output_file, -4) != '.css') {
         $output_file .= '.css';
       }
