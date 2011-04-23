@@ -32,7 +32,7 @@ function less_menu() {
  */
 function _less_build(&$vars, $hook) {
   $lessphp_include = '';
-  
+
   if (module_exists('libraries')) {
     if ($lessphp_path = libraries_get_path('lessphp')) {
       if (file_exists($lessphp_path .'/lessc.inc.php')) {
@@ -40,11 +40,11 @@ function _less_build(&$vars, $hook) {
       }
     }
   }
-  
+
   if (empty($lessphp_include)) {
     $lessphp_include = 'lessphp/lessc.inc.php';
   }
-  
+
   $css = $vars['css'];
 
   $less_path = file_directory_path() .'/less';
@@ -68,11 +68,18 @@ function _less_build(&$vars, $hook) {
 
           $css_path = $less_path .'/'. dirname($input_file);
 
-          if (!is_dir($css_path)) {
-            @mkdir($css_path, 0777, TRUE);
+          if (!is_dir($css_path) && !@mkdir($css_path, 0775, TRUE)) {
+            // There is a problem with the directory.
+            $param = array('%dir' => $css_path);
+            if (user_access('administer site configuration')) {
+              drupal_set_message(t('LESS could not create a directory in %dir', $param), 'error');
+            }
+            watchdog('LESS', t('LESS could not create a directory in %dir', $param), array(), WATCHDOG_ERROR);
+            return;
           }
 
           $output_file = $css_path .'/'. basename($input_file, '.less');
+          // correct file names of files not following the .css.less naming convention
           if (drupal_substr($output_file, -4) != '.css') {
             $output_file .= '.css';
           }
