@@ -104,7 +104,7 @@ function less_css_alter(&$css) {
 
         try {
           $output_data = $less->parse($data);
-          file_save_data($output_data, $output_file, FILE_EXISTS_REPLACE);
+          file_unmanaged_save_data($output_data, $output_file, FILE_EXISTS_REPLACE);
         }
         catch (Exception $e) {
           $message = 'LESS ERROR: ' . $e->getMessage() . ', ' . $input_file;
