@@ -137,13 +137,19 @@ function less_css_alter(&$css) {
  * @return An array of cache table names.
  */
 function less_flush_caches() {
-  $semaphore = variable_get('cron_semaphore', FALSE);
-  if (!$semaphore) {
+  if (!drupal_static('less_cron')) {
     // Delete all generated files.
     $less_path = file_default_scheme() . '://less';
     file_unmanaged_delete_recursive($less_path);
   }
   return array();
+}
+
+/**
+ * Implementation of hook_cron().
+ */
+function less_cron() {
+  drupal_static(__FUNCTION__, TRUE);
 }
 
 /**
