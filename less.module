@@ -32,7 +32,7 @@ function less_menu() {
  */
 function less_css_alter(&$css) {
   $lessphp_include = '';
-  
+
   if (module_exists('libraries')) {
     if ($lessphp_path = libraries_get_path('lessphp')) {
       if (file_exists($lessphp_path .'/lessc.inc.php')) {
@@ -146,10 +146,10 @@ function less_flush_caches() {
 }
 
 /**
- * Implementation of hook_cron().
+ * Implementation of hook_cron_queue_info().
  */
-function less_cron() {
-  drupal_static(__FUNCTION__, TRUE);
+function less_cron_queue_info() {
+  drupal_static('less_cron', TRUE);
 }
 
 /**
