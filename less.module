@@ -44,7 +44,8 @@ function less_permission() {
 /**
  * Builds the less cache
  */
-function less_css_alter(&$css) {
+function _less_pre_render($styles) {
+  
   $lessphp_include = '';
 
   if (module_exists('libraries')) {
@@ -70,10 +71,8 @@ function less_css_alter(&$css) {
     }
   }
 
-  $files_keys = array_keys($css);
-  $files_values = array_values($css);
-  foreach ($files_keys as $key => $input_file) {
-
+  foreach ($styles['#items'] as $key => $info) {
+    $input_file = $info['data'];
     if (drupal_substr($input_file, -5) == '.less') {
       
       $file_uri = file_uri_target($input_file);
@@ -131,16 +130,14 @@ function less_css_alter(&$css) {
       }
 
       if (file_exists($output_file)) {
-        array_splice($files_keys, $key, 1, $output_file);
-        $files_values[$key]['data'] = $output_file;
+        $styles['#items'][$key]['data'] = $output_file;
       }
 
     }
 
   }
 
-  $css = array_combine($files_keys, $files_values);
-
+  return $styles;
 }
 
 /**
@@ -182,4 +179,8 @@ function less_requirements($phase) {
       ),
     );
   }
+}
+
+function less_element_info_alter(&$type) {
+  array_unshift($type['styles']['#pre_render'], '_less_pre_render');
 }
