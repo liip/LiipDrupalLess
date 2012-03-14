@@ -148,13 +148,6 @@ function less_preprocess_maintenance_page(&$vars, $hook) {
 }
 
 /**
- * Implements HOOK_enable().
- */
-function less_enable() {
-  drupal_rebuild_theme_registry();
-}
-
-/**
  * Recursively delete a path.
  *
  * Lifted from imagecache, with thanks to dopry/drewish.
@@ -210,37 +203,6 @@ function less_cron() {
   
   foreach ($found_files as $found_file) {
     _less_recursive_delete($found_file->filename);
-  }
-}
-
-/**
- * Implementation of hook_requirements().
- *
- * @param $phase The phase in which hook_requirements is run: install or runtime.
- */
-function less_requirements($phase) {
-  if ($phase == 'runtime') {
-    $requirements = array();
-    
-    preg_match('/lessphp v([0-9\.]+)/', file_get_contents(_less_inc_path()), $matches);
-    
-    $requirements['less_version'] = array(
-      'title' => t('LESS - lessphp version'),
-      'value' => $matches[1],
-      'description' => t('You can check for newer versions here <a href="!url">http://leafo.net/lessphp/</a>.', array("!url" => url('http://leafo.net/lessphp/'))),
-      'severity' => REQUIREMENT_WARNING,
-    );
-    
-    if (variable_get('less_devel', FALSE)) {
-      $requirements['less_devel'] = array(
-        'title' => 'LESS developer mode',
-        'value' => t('Enabled'),
-        'description' => t('LESS files are being regenerated on every request. Remember to <a href="!url">turn off</a> this feature on production websites.', array("!url" => url('admin/settings/less'))),
-        'severity' => REQUIREMENT_WARNING,
-      );
-    }
-    
-    return $requirements;
   }
 }
 
