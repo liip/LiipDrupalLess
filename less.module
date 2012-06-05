@@ -46,8 +46,6 @@ function less_permission() {
  */
 function _less_pre_render($styles) {
   
-  $lessphp_include = _less_inc_path();
-  
   $less_devel = variable_get('less_devel', FALSE);
   $less_dir = variable_get('less_dir', '');
   
@@ -86,36 +84,39 @@ function _less_pre_render($styles) {
       }
 
       if (!file_exists($output_file)) {
-        require_once($lessphp_include);
-
-        $less = new lessc();
-
-        $contents = drupal_load_stylesheet($input_file, FALSE);
-
-        // Build the base URL of this CSS file: start with the full URL.
-        $css_base_url = file_create_url($input_file);
-        // Move to the parent.
-        $css_base_url = substr($css_base_url, 0, strrpos($css_base_url, '/'));
-        // Simplify to a relative URL if the stylesheet URL starts with the
-        // base URL of the website.
-        if (substr($css_base_url, 0, strlen($GLOBALS['base_root'])) == $GLOBALS['base_root']) {
-          $css_base_url = substr($css_base_url, strlen($GLOBALS['base_root']));
-        }
-
-        _drupal_build_css_path(NULL, $css_base_url . '/');
-        // Prefix all paths within this CSS file, ignoring external and absolute paths.
-        $data = preg_replace_callback('/url\(\s*[\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\s*\)/i', '_drupal_build_css_path', $contents);
-
-        try {
-          $output_data = $less->parse($data);
-          file_unmanaged_save_data($output_data, $output_file, FILE_EXISTS_REPLACE);
-        }
-        catch (Exception $e) {
-          $message = 'LESS ERROR: ' . $e->getMessage() . ', ' . $input_file;
-          watchdog('LESS', $message, array(), WATCHDOG_ERROR);
-          if (user_access(LESS_PERMISSION)) {
-            drupal_set_message($message, 'error');
+        
+        if (_less_inc()) {
+            
+          $less = new lessc();
+  
+          $contents = drupal_load_stylesheet($input_file, FALSE);
+  
+          // Build the base URL of this CSS file: start with the full URL.
+          $css_base_url = file_create_url($input_file);
+          // Move to the parent.
+          $css_base_url = substr($css_base_url, 0, strrpos($css_base_url, '/'));
+          // Simplify to a relative URL if the stylesheet URL starts with the
+          // base URL of the website.
+          if (substr($css_base_url, 0, strlen($GLOBALS['base_root'])) == $GLOBALS['base_root']) {
+            $css_base_url = substr($css_base_url, strlen($GLOBALS['base_root']));
           }
+  
+          _drupal_build_css_path(NULL, $css_base_url . '/');
+          // Prefix all paths within this CSS file, ignoring external and absolute paths.
+          $data = preg_replace_callback('/url\(\s*[\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\s*\)/i', '_drupal_build_css_path', $contents);
+  
+          try {
+            $output_data = $less->parse($data);
+            file_unmanaged_save_data($output_data, $output_file, FILE_EXISTS_REPLACE);
+          }
+          catch (Exception $e) {
+            $message = 'LESS ERROR: ' . $e->getMessage() . ', ' . $input_file;
+            watchdog('LESS', $message, array(), WATCHDOG_ERROR);
+            if (user_access(LESS_PERMISSION)) {
+              drupal_set_message($message, 'error');
+            }
+          }
+          
         }
 
       }
@@ -184,20 +185,27 @@ function less_element_info_alter(&$type) {
   array_unshift($type['styles']['#pre_render'], '_less_pre_render');
 }
 
-function _less_inc_path() {
-  $lessphp_include = '';
-
-  if (module_exists('libraries')) {
-    if ($lessphp_path = libraries_get_path('lessphp')) {
-      if (file_exists($lessphp_path .'/lessc.inc.php')) {
-        $lessphp_include = $lessphp_path .'/lessc.inc.php';
+function _less_inc() {
+  
+  if (!class_exists('lessc', FALSE)) {
+    $include_locations = array(
+      'lessphp/lessc.inc.php', // legacy location
+    );
+    
+    // load libraries module for during install
+    module_load_include('module', 'libraries');
+    
+    if (function_exists('libraries_get_path')) {
+      array_unshift($include_locations, libraries_get_path('lessphp') . '/lessc.inc.php');
+    }
+    
+    foreach ($include_locations as $include_location) {
+      if (file_exists($include_location)) {
+        require_once $include_location;
+        break;
       }
     }
   }
-  
-  if (empty($lessphp_include)) {
-    $lessphp_include = drupal_get_path('module', 'less') . '/lessphp/lessc.inc.php';
-  }
-  
-  return $lessphp_include;
+
+  return class_exists('lessc', FALSE);
 }
