@@ -110,10 +110,11 @@ function _less_pre_render($styles) {
             file_unmanaged_save_data($output_data, $output_file, FILE_EXISTS_REPLACE);
           }
           catch (Exception $e) {
-            $message = 'LESS ERROR: ' . $e->getMessage() . ', ' . $input_file;
-            watchdog('LESS', $message, array(), WATCHDOG_ERROR);
+            $message = 'LESS error: @message, %input_file';
+            $message_vars = array('@message' => $e->getMessage(), '%input_file' => $input_file);
+            watchdog('LESS', $message, $message_vars, WATCHDOG_ERROR);
             if (user_access(LESS_PERMISSION)) {
-              drupal_set_message($message, 'error');
+              drupal_set_message(t($message, $message_vars), 'error');
             }
           }
           
