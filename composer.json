@@ -1,0 +1,6 @@
+{
+  "require": {
+    "leafo/lessphp": "0.3.*"
+  },
+  "minimum-severity": "stable"
+}

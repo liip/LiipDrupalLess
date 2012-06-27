@@ -5,5 +5,3 @@ description = "Allows themes or modules to use LESS files."
 core = 7.x
 
 configure = admin/config/development/less
-
-dependencies[] = libraries
