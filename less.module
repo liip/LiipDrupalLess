@@ -134,7 +134,7 @@ function _less_pre_render($styles) {
 }
 
 /**
- * Implements of hook_flush_caches().
+ * Implements hook_flush_caches().
  *
  * Flushes compiled LESS files during cache flush, except during cron.
  *
@@ -148,7 +148,7 @@ function less_flush_caches() {
 }
 
 /**
- * Implementation of hook_cron_queue_info().
+ * Implements hook_cron_queue_info().
  */
 function less_cron_queue_info() {
   drupal_static('less_cron', TRUE);
