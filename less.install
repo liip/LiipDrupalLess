@@ -41,7 +41,7 @@ function less_requirements($phase) {
         $requirements['less_devel'] = array(
           'title' => 'LESS developer mode',
           'value' => t('Enabled'),
-          'description' => t('LESS files are being regenerated on every request. Remember to <a href="!url">turn off</a> this feature on production websites.', array("!url" => url('admin/settings/less'))),
+          'description' => t('LESS files are being regenerated on every request. Remember to <a href="!url">turn off</a> this feature on production websites.', array("!url" => url('admin/config/development/less'))),
           'severity' => REQUIREMENT_WARNING,
         );
       }
