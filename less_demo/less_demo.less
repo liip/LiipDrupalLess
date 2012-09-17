@@ -1,0 +1,20 @@
+#less_demo_gradient {
+  
+  width: 640px;
+  height: 480px;
+  
+  background-color: @gradient_end;
+  background-image: -moz-linear-gradient(top, @gradient_start 0%, @gradient_end 100%);
+  background-image: -ms-linear-gradient(top, @gradient_start 0%, @gradient_end 100%);
+  background-image: -o-linear-gradient(top, @gradient_start 0%, @gradient_end 100%);
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, @gradient_start), color-stop(1, @gradient_end));
+  background-image: -webkit-linear-gradient(top, @gradient_start 0%, @gradient_end 100%);
+  background-image: linear-gradient(top, @gradient_start 0%, @gradient_end 100%);
+  background-image: url('http://google.com');
+  
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 80px;
+  line-height: 480px;
+  text-shadow: 0 0 0 transparent, 0px 0px 10px @text_glow;
+  text-align: center;
+}

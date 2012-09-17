@@ -1,0 +1,73 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function less_demo_menu() {
+  $items = array();
+
+  $items['admin/config/development/less/demo'] = array(
+    'title' => 'LESS Demo',
+    'description' => 'Demonstration for less features',
+    'page callback' => '_less_demo_page',
+    'access arguments' => array(LESS_PERMISSION),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 1,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function less_demo_admin_paths() {
+  return array(
+    'admin/config/development/less/demo' => FALSE,
+  );
+}
+
+/**
+ * Implements hook_init().
+ */
+function less_demo_init() {
+  $less_settings = less_get_settings('less_demo');
+  
+  $file_less_settings = array(
+    'variables' => array(
+      '@header_to' => 'red',
+    ),
+  );
+  
+  // $less_settings['variables'] = array_merge($less_settings['variables'], $file_less_settings['variables']);
+  
+  drupal_add_css(drupal_get_path('module', 'less_demo') . '/less_demo.less', array('less' => $less_settings));
+}
+
+/**
+ * Implements hook_less_variables().
+ */
+function less_demo_less_variables() {
+  return array(
+    '@test' => '#ccc',
+  );
+}
+
+/**
+ * Implements hook_less_functions().
+ */
+function less_demo_less_functions() {
+  return array(
+    'url' => function ($args, $less) {
+      return 'blarg';
+    },
+  );
+}
+
+function urlreplacement($args, $less) {
+  return 'blarg';
+}
+
+function _less_demo_page() {
+  return '<div id="less_demo_gradient">This is some text.</div>';
+}

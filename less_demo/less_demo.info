@@ -1,0 +1,14 @@
+
+name = "LESS CSS Preprocessor - DEMO"
+description = "Allows themes or modules to use LESS files."
+
+core = 7.x
+
+configure = admin/config/development/less
+
+#stylesheets[all][] = less.test.less
+
+less[@gradient_end] = darken(@gradient_start, 10%);
+less[@gradient_start] = #0779bf;
+
+less[@text_glow] = lighten(@gradient_start, 10%);

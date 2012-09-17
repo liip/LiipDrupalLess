@@ -11,6 +11,19 @@
 define('LESS_PERMISSION', 'administer less');
 
 /**
+ * Implements hook_hook_info().
+ */
+function less_hook_info() {
+  $hooks = array();
+  
+  $hooks['form_system_theme_settings_alter'] = array(
+    'group' => 'theme',
+  );
+  
+  return $hooks;
+}
+
+/**
  * Implements hook_menu().
  */
 function less_menu() {
@@ -24,6 +37,11 @@ function less_menu() {
     'access arguments' => array(LESS_PERMISSION),
     'file' => 'less.admin.inc',
     'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['admin/config/development/less/settings'] = array(
+    'title' => 'LESS settings',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
   );
 
   return $items;
@@ -82,42 +100,55 @@ function _less_pre_render($styles) {
       if (drupal_substr($output_file, -4) != '.css') {
         $output_file .= '.css';
       }
-
-      if (!is_file($output_file)) {
+      
+      $less_settings = !empty($info['less']) ? $info['less'] : less_get_settings(_less_files($input_file));
+      
+      if (!empty($less_settings)) {
         
-        if (_less_inc()) {
-            
-          $less = new lessc();
-  
-          $contents = drupal_load_stylesheet($input_file, FALSE);
-  
-          // Build the base URL of this CSS file: start with the full URL.
-          $css_base_url = file_create_url($input_file);
-          // Move to the parent.
-          $css_base_url = substr($css_base_url, 0, strrpos($css_base_url, '/'));
-          // Simplify to a relative URL if the stylesheet URL starts with the
-          // base URL of the website.
-          if (substr($css_base_url, 0, strlen($GLOBALS['base_root'])) == $GLOBALS['base_root']) {
-            $css_base_url = substr($css_base_url, strlen($GLOBALS['base_root']));
+        // array_multisort() the data so that md5 returns the same hash regardless order of data.
+        array_multisort($less_settings);
+        
+        // json_encode() because it handles lambda functions by converting them to {}, while serialize throws an error 
+        $output_file = substr_replace($output_file, md5(json_encode($less_settings)) . '.css', -3);
+      }
+      
+      if (!is_file($output_file) && _less_inc()) {
+        
+        $less = new lessc();
+        
+        if (method_exists($less, 'registerFunction')) {
+          foreach ($less_settings['functions'] as $funcion => $callback) {
+            $less->registerFunction($funcion, $callback);
           }
-  
-          _drupal_build_css_path(NULL, $css_base_url . '/');
-          // Prefix all paths within this CSS file, ignoring external and absolute paths.
-          $data = preg_replace_callback('/url\(\s*[\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\s*\)/i', '_drupal_build_css_path', $contents);
-  
-          try {
-            $output_data = $less->parse($data);
-            file_unmanaged_save_data($output_data, $output_file, FILE_EXISTS_REPLACE);
+        }
+        
+        $contents = drupal_load_stylesheet($input_file, FALSE);
+
+        // Build the base URL of this CSS file: start with the full URL.
+        $css_base_url = file_create_url($input_file);
+        // Move to the parent.
+        $css_base_url = substr($css_base_url, 0, strrpos($css_base_url, '/'));
+        // Simplify to a relative URL if the stylesheet URL starts with the
+        // base URL of the website.
+        if (substr($css_base_url, 0, strlen($GLOBALS['base_root'])) == $GLOBALS['base_root']) {
+          $css_base_url = substr($css_base_url, strlen($GLOBALS['base_root']));
+        }
+        
+        _drupal_build_css_path(NULL, $css_base_url . '/');
+        // Prefix all paths within this CSS file, ignoring external and absolute paths.
+        $data = preg_replace_callback('/url\(\s*[\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\s*\)/i', '_drupal_build_css_path', $contents);
+        
+        try {
+          $output_data = $less->parse($data, $less_settings['variables']);
+          file_unmanaged_save_data($output_data, $output_file, FILE_EXISTS_REPLACE);
+        }
+        catch (Exception $e) {
+          $message = 'LESS error: @message, %input_file';
+          $message_vars = array('@message' => $e->getMessage(), '%input_file' => $input_file);
+          watchdog('LESS', $message, $message_vars, WATCHDOG_ERROR);
+          if (user_access(LESS_PERMISSION)) {
+            drupal_set_message(t($message, $message_vars), 'error');
           }
-          catch (Exception $e) {
-            $message = 'LESS error: @message, %input_file';
-            $message_vars = array('@message' => $e->getMessage(), '%input_file' => $input_file);
-            watchdog('LESS', $message, $message_vars, WATCHDOG_ERROR);
-            if (user_access(LESS_PERMISSION)) {
-              drupal_set_message(t($message, $message_vars), 'error');
-            }
-          }
-          
         }
 
       }
@@ -158,11 +189,15 @@ function less_cron_queue_info() {
  * Helper function to create a new less dir.
  */
 function _less_new_dir() {
+  global $conf;
+  
   $less_dir = uniqid('', TRUE);
   $less_path = 'public://less/' . $less_dir;
-  file_prepare_directory($less_path, FILE_CREATE_DIRECTORY);
-  variable_set('less_dir', $less_dir);
-  return $less_dir;
+  if (file_prepare_directory($less_path, FILE_CREATE_DIRECTORY)) {
+    variable_set('less_dir', $less_dir);
+  }
+  
+  return $conf['less_dir'];
 }
 
 /**
@@ -222,4 +257,89 @@ function _less_inc() {
   }
 
   return $loaded;
+}
+
+function _less_registry() {
+  $stylesheets_cache = &drupal_static('_less_files');
+  $defaults_cache = &drupal_static('less_get_settings');
+  
+  if (!isset($stylesheets_cache) || !isset($defaults_cache)) {
+    $stylesheets_cache = array();
+    
+    $system_types = array(
+      'module_enabled',
+      'theme',
+    );
+    
+    foreach ($system_types as $system_type) {
+      $system_items = system_list($system_type);
+      
+      foreach ($system_items as $system_item_name => $system_item) {
+        if (!empty($system_item->info['stylesheets'])) {
+          foreach ($system_item->info['stylesheets'] as $stylesheets) {
+            foreach ($stylesheets as $stylesheet) {
+              if (drupal_substr($stylesheet, -5) == '.less') {
+                $stylesheets_cache[$stylesheet] = $system_item_name;
+              }
+            }
+          }
+        }
+        if (!empty($system_item->info['less'])) {
+          $defaults_cache[$system_item_name] = $system_item->info['less'];
+        }
+      }
+    }
+  }
+  
+}
+
+function _less_files($filepath) {
+  $stylesheets_cache = &drupal_static(__FUNCTION__);
+  
+  if (!isset($stylesheets_cache)) {
+    _less_registry();
+  }
+  
+  $system_name = null;
+  
+  if (isset($stylesheets_cache[$filepath])) {
+    $system_name = $stylesheets_cache[$filepath];
+  }
+  
+  return $system_name;
+}
+
+function less_get_settings($system_name) {
+  global $theme;
+  
+  $defaults_cache = &drupal_static(__FUNCTION__);
+  
+  if (!isset($defaults_cache)) {
+    _less_registry();
+  }
+  
+  $data = array(
+    'variables' => array(),
+    'functions' => array(),
+  );
+  
+  if (!empty($defaults_cache[$system_name])) {
+    $data['variables'] = $defaults_cache[$system_name];
+  }
+  
+  if (module_hook($system_name, 'less_variables')) {
+    $data['variables'] = array_merge($data['variables'], array_filter(module_invoke($system_name, 'less_variables')));
+  }
+  
+  $saved_settings = theme_get_setting('less', $theme);
+  
+  if (!is_null($saved_settings) && !empty($saved_settings[$system_name])) {
+    $data['variables'] = array_merge($data['variables'], array_filter($saved_settings[$system_name]));
+  }
+  
+  if (module_hook($system_name, 'less_functions')) {
+    $data['functions'] = module_invoke($system_name, 'less_functions');
+  }
+  
+  return $data;
 }
