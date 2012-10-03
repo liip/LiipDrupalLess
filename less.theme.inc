@@ -1,9 +1,7 @@
 <?php
 
 /**
- * Implements hook_form_FORM_ID_alter
- * 
- * Alter for system_theme_settings form
+ * Implements hook_form_FORM_ID_alter() for system_theme_settings().
  */
 function less_form_system_theme_settings_alter(&$form, &$form_state) {
   preg_match('/^theme_([A-Za-z0-9_]+)_settings$/', $form['var']['#value'], $matches);
@@ -62,10 +60,15 @@ function less_form_system_theme_settings_alter(&$form, &$form_state) {
       $form['less'] += $less_settings_form;
     }
     
+    $form['less']['tokens'] = array(
+      '#theme' => 'token_tree',
+      '#token_types' => array('all'),
+    );
+    
   }
 }
 
-function _less_setting_form_element($system_name, $less_settings, $saved_settings, $title = null) {
+function _less_setting_form_element($system_name, $less_settings, $saved_settings, $title = NULL) {
   $form = array();
   
   $form = array(

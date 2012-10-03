@@ -10,6 +10,7 @@ function less_enable() {
 function less_uninstall() {
   variable_del('less_devel');
   variable_del('less_dir');
+  cache_clear_all('less:', 'cache', TRUE);
 }
 
 /**
@@ -32,7 +33,7 @@ function less_requirements($phase) {
       if ($lessc_exists) {
         $requirements['less_version'] = array(
           'title' => t('LESS'),
-          'value' => isset(lessc::$VERSION) ? preg_replace('/([^0-9\.-])+/i', '', lessc::$VERSION) : '(less than v0.3.2)',
+          'value' => isset(lessc::$VERSION) ? preg_replace('/([^0-9\.-])+/i', '', lessc::$VERSION) : 'unknown',
           'description' => t('To check for newer versions of lessphp, go to <a href="!url" target="_blank">http://leafo.net/lessphp/</a>', array("!url" => url('http://leafo.net/lessphp/'))),
           'severity' => REQUIREMENT_OK,
         );

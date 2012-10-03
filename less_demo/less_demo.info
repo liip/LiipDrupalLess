@@ -1,10 +1,10 @@
 
 name = "LESS CSS Preprocessor - DEMO"
-description = "Allows themes or modules to use LESS files."
+description = "Demonstrate LESS module functionality and implementation examples."
 
 core = 7.x
 
-configure = admin/config/development/less
+configure = admin/config/development/less/demo
 
 #stylesheets[all][] = less.test.less
 

@@ -41,7 +41,7 @@ function less_demo_init() {
   
   // $less_settings['variables'] = array_merge($less_settings['variables'], $file_less_settings['variables']);
   
-  drupal_add_css(drupal_get_path('module', 'less_demo') . '/less_demo.less', array('less' => $less_settings));
+  drupal_add_css(drupal_get_path('module', 'less_demo') . '/styles/less_demo.css.less', array('less' => $less_settings));
 }
 
 /**
@@ -57,6 +57,7 @@ function less_demo_less_variables() {
  * Implements hook_less_functions().
  */
 function less_demo_less_functions() {
+  return;
   return array(
     'url' => function ($args, $less) {
       return 'blarg';
@@ -69,5 +70,5 @@ function urlreplacement($args, $less) {
 }
 
 function _less_demo_page() {
-  return '<div id="less_demo_gradient">This is some text.</div>';
+  return '<div id="less_demo_gradient"><div class="less_demo_logo"></div><p>This is some text.</p></div>';
 }
