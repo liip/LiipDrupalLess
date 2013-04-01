@@ -23,9 +23,15 @@ function less_hook_info() {
   $hooks['wysiwyg_editor_settings_alter'] = array(
     'group' => 'wysiwyg',
   );
-  
   $hooks['form_wysiwyg_profile_form_alter'] = array(
     'group' => 'wysiwyg',
+  );
+  
+  $hooks['cron_queue_info'] = array(
+    'group' => 'cron',
+  );
+  $hooks['cron'] = array(
+    'group' => 'cron',
   );
   
   return $hooks;
@@ -262,15 +268,6 @@ function _less_pre_render($styles) {
 }
 
 /**
- * Implements hook_cron_queue_info().
- * 
- * This hook runs before cache flush during cron. Reliably lets us know if its cron or not.
- */
-function less_cron_queue_info() {
-  drupal_static('less_cron', TRUE);
-}
-
-/**
  * Implements hook_admin_menu_cache_info().
  */
 function less_admin_menu_cache_info() {
@@ -313,26 +310,6 @@ function _less_get_dir($rebuild = FALSE) {
   }
   
   return $conf['less_dir'];
-}
-
-/**
- * Implements hook_cron().
- * 
- * Removes all stale compiled css files that are no longer in use.
- */
-function less_cron() {
-  $less_dir = _less_get_dir();
-  
-  $file_scan_options = array(
-    //adding current dir to excludes
-    'nomask' => '/(\.\.?|CVS|' . preg_quote($less_dir) . ')$/',
-    'recurse' => FALSE,
-  );
-  $found_files = file_scan_directory('public://less', '/^.+$/', $file_scan_options);
-
-  foreach ($found_files as $found_file) {
-    file_unmanaged_delete_recursive($found_file->uri);
-  }
 }
 
 /**
