@@ -48,6 +48,7 @@
                 self.failed_requests = 0;
                 
                 for (i in response) {
+                  
                   var old_file = response[i].old_file,
                       new_file = response[i].new_file;
                   $('head link[type="text/css"][href^="' + old_file + '"]', context).replaceWith($('<link type="text/css" rel="stylesheet" media="all" />').attr('href', new_file));
