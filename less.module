@@ -153,7 +153,7 @@ function _less_pre_render($styles) {
         }
       }
       else {
-        $less_settings = less_get_settings(_less_files($input_file));
+        $less_settings = less_get_settings(_less_file_owner($input_file));
       }
       
       if (!empty($less_settings)) {
@@ -209,6 +209,7 @@ function _less_pre_render($styles) {
         $cache = NULL;
         $output_data = NULL;
         
+        // Since lessphp is a php class, this will capture errors for output.
         try {
           if ($less_devel) {
             $cache = $less->cachedCompile($input_file);
@@ -234,7 +235,7 @@ function _less_pre_render($styles) {
         
         if (isset($output_data)) {
           
-          // fix paths for images as .css is in different location
+          // Fix paths for images as .css is in different location.
           $output_data = _less_rewrite_paths($input_file, $output_data);
           
           file_unmanaged_save_data($output_data, $output_file, FILE_EXISTS_REPLACE);
@@ -245,7 +246,6 @@ function _less_pre_render($styles) {
       if (is_file($output_file)) {
         $styles['#items'][$key]['data'] = $output_file;
         
-        // preprocess being false generates a <link /> rather than an @import.
         if ($less_devel) {
           
           $less_watch_cache = $styles['#items'][$key];
@@ -256,6 +256,7 @@ function _less_pre_render($styles) {
 
           cache_set('less:watch:' . drupal_hash_base64(file_create_url($output_file)), $less_watch_cache);
           
+          // 'preprocess' being FALSE generates a discreet <link /> rather than an @import.
           $styles['#items'][$key]['preprocess'] = FALSE;
         }
       }
@@ -380,6 +381,8 @@ function _less_rewrite_paths($input_filepath, $contents) {
 /**
  * This keeps track of which modules and themes own which .less files,
  * and any variable defaults those modules define.
+ * 
+ * Only tracks .less files that are added through .info files.
  */
 function _less_registry() {
   $static_stylesheets = &drupal_static('less_stylesheets');
@@ -432,9 +435,14 @@ function _less_registry() {
 }
 
 /**
- * Returns the owning module/theme for a passed in .less file.
+ * Returns the owning module/theme for a passed in .less file, or NULL.
+ * Only can resolve .less files that are added using .info files.
+ * 
+ * @param $filepath
+ * 
+ * @return system name or NULL.
  */
-function _less_files($filepath) {
+function _less_file_owner($filepath) {
   $stylesheets_cache = &drupal_static('less_stylesheets');
   
   if (!isset($stylesheets_cache)) {
@@ -452,6 +460,8 @@ function _less_files($filepath) {
 
 /**
  * Returns the compiled list of variables and functions for a module/theme.
+ * 
+ * @param $system_name module or theme system name.
  */
 function less_get_settings($system_name) {
   global $theme;
@@ -499,6 +509,9 @@ function _less_token_replace($arg) {
   return array($type, $delimeter, array(token_replace($value[0])));
 }
 
+/**
+ * Handles AJAX requests to check for changes files while in developer mode.
+ */
 function _less_watch() {
   
   $files = (array) $_POST['files'];
