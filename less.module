@@ -514,7 +514,7 @@ function _less_token_replace($arg) {
  */
 function _less_watch() {
   
-  $files = (array) $_POST['files'];
+  $files = (array) $_POST['less_files'];
   
   $changed_files = array();
   
