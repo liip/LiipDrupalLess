@@ -377,11 +377,15 @@ function _less_rewrite_paths($input_filepath, $contents) {
   return $output;
 }
 
+/**
+ * This keeps track of which modules and themes own which .less files,
+ * and any variable defaults those modules define.
+ */
 function _less_registry() {
   $static_stylesheets = &drupal_static('less_stylesheets');
   $static_defaults = &drupal_static('less_defaults');
   
-  if (!isset($stylesheets_cache) || !isset($defaults_cache)) {
+  if (!isset($static_stylesheets) || !isset($static_defaults)) {
     
     if (($cache_stylesheets = cache_get('less:stylesheets')) && ($cache_defaults = cache_get('less:defaults'))) {
       $static_stylesheets = $cache_stylesheets->data;
@@ -427,6 +431,9 @@ function _less_registry() {
   
 }
 
+/**
+ * Returns the owning module/theme for a passed in .less file.
+ */
 function _less_files($filepath) {
   $stylesheets_cache = &drupal_static('less_stylesheets');
   
@@ -443,6 +450,9 @@ function _less_files($filepath) {
   return $system_name;
 }
 
+/**
+ * Returns the compiled list of variables and functions for a module/theme.
+ */
 function less_get_settings($system_name) {
   global $theme;
   
@@ -480,6 +490,9 @@ function less_get_settings($system_name) {
   return $data;
 }
 
+/**
+ * Handler for LESS function token().
+ */
 function _less_token_replace($arg) {
   list($type, $delimeter, $value) = $arg;
   

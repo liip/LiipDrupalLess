@@ -6,11 +6,10 @@
       var watched_files = [],
           $watched_links;
       
-      var $watched_links = $('head link[type="text/css"][href*="/less/"]', context).each(function () {
+      $watched_links = $('head link[type="text/css"][href*="/less/"]', context).each(function () {
         
         // Only grab the portion of the url up to, but not including, the '?'.
         watched_files.push($(this).attr('href').match(/^([^\s]+)\?/)[1]);
-        
       });
       
       if (watched_files.length > 0) {
@@ -20,7 +19,7 @@
          
           failed_requests: 0,
         
-          // starting interval - 500ms
+          // starting interval in milliseconds
           interval: 500,
         
           // kicks off the setTimeout
@@ -32,14 +31,14 @@
           },
          
           // get AJAX data + respond to it
-          getData: function(){
+          getData: function() {
             var self = this;
        
             $.ajax({
               type: 'POST',
               url: settings.basePath + 'ajax/less/watch',
               data: {
-                files: watched_files,
+                files: watched_files
               },
               timeout: self.interval,
               
@@ -47,6 +46,7 @@
               success: function ( response ) {
                 
                 self.failed_requests = 0;
+                
                 for (i in response) {
                   var old_file = response[i].old_file,
                       new_file = response[i].new_file;
@@ -71,7 +71,7 @@
                 }
               }
             });
-          },
+          }
         };
          
         poller.init();
