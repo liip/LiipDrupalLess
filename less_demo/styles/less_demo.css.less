@@ -2,7 +2,6 @@
 @import url('../imports/less_demo.clearfix.css.less');
 
 #less_demo_gradient {
-  test: token("[site:name]");
   .clearfix;
   
   .gradient(@gradient_start, @gradient_end);
@@ -28,4 +27,13 @@
     }
   }
   
+}
+
+.less_demo_logo {
+  
+  &:after {
+    display: block;
+    content: token("Site name from token in .less file: [site:name]");
+    font-size: 20px;
+  }
 }
