@@ -104,7 +104,10 @@ function _less_pre_render($styles) {
     // Warn users once every hour that less is checking for file modifications.
     if (user_access(LESS_PERMISSION) && flood_is_allowed('less_devel_warning', 1)) {
       flood_register_event('less_devel_warning');
-      drupal_set_message(t('LESS files are being checked for modifications on every request. Remember to <a href="!url">turn off</a> this feature on production websites.', array("!url" => url('admin/config/development/less'))), 'status');
+      
+      $message = 'LESS files are being checked for modifications on every request. Remember to <a href="@url">turn off</a> this feature on production websites.';
+      $message_vars = array("@url" => url('admin/config/development/less'));
+      drupal_set_message(t($message, $message_vars), 'status');
     }
   }
   

@@ -1,5 +1,9 @@
 <?php
-
+/**
+ * @file
+ * Install, update, and uninstall functions for the less module.
+ */
+ 
 /**
  * Implements HOOK_enable().
  */
@@ -16,7 +20,7 @@ function less_uninstall() {
 /**
  * Implementation of hook_requirements().
  *
- * @param $phase The phase in which hook_requirements is run: install or runtime.
+ * @param $phase The phase in which hook_requirements is run: install/runtime.
  */
 function less_requirements($phase) {
   $requirements = array();

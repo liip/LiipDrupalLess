@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Contains functions that handle WYSIWYG module integration.
+ */
+
+/**
  * Implements hook_wysiwyg_editor_settings_alter().
  * Check the css_content WYSIWYG setting for LESS files and replace with 
  * generated CSS files where necessary.
