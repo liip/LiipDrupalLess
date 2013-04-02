@@ -6,9 +6,9 @@ core = 7.x
 
 configure = admin/config/development/less/demo
 
-#stylesheets[all][] = less.test.less
+stylesheets[all][] = styles/less_demo.info.css.less
 
-less[@gradient_end] = darken(@gradient_start, 10%);
+# Variables are lazy processed, so they don't have to be defined in order.
+less[@gradient_end]   = darken(@gradient_start, 10%);
 less[@gradient_start] = #0779bf;
-
-less[@text_glow] = lighten(@gradient_start, 10%);
+less[@text_glow]      = lighten(@gradient_start, 10%);

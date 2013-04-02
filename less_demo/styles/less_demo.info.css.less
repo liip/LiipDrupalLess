@@ -1,6 +1,13 @@
 @import url('../imports/less_demo.imported.css.less');
 @import url('../imports/less_demo.clearfix.css.less');
 
+/**
+ * The following variables defined in less_demo.info:
+ *   @gradient_start
+ *   @gradient_end
+ *   @text_glow
+ */
+
 #less_demo_gradient {
   .clearfix;
   
@@ -27,13 +34,14 @@
     }
   }
   
-}
-
-.less_demo_logo {
-  
-  &:after {
-    display: block;
-    content: token("Site name from token in .less file: [site:name]");
-    font-size: 20px;
+  .less_demo_logo {
+    
+    &:after {
+      display: block;
+      content: token("Site name from token in .less file: [site:name]");
+      font-size: 20px;
+    }
   }
 }
+
+
