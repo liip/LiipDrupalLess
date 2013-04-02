@@ -139,31 +139,17 @@ function _less_pre_render($styles) {
         $output_file .= '.css';
       }
       
-      $less_settings = array(
-        'variables' => array(),
-        'functions' => array(),
-      );
+      $less_settings = less_get_settings(_less_file_owner($input_file));
       
       if (!empty($info['less'])) {
-        
-        $less_settings = array_merge_recursive($less_settings, $info['less']);
-        
-        if (!isset($less_settings['functions']['token'])) {
-          $less_settings['functions']['token'] = '_less_token_replace';
-        }
-      }
-      else {
-        $less_settings = less_get_settings(_less_file_owner($input_file));
+        $less_settings = drupal_array_merge_deep($less_settings, (array) $info['less']);
       }
       
-      if (!empty($less_settings)) {
-        
-        // array_multisort() the data so that the hash returns the same hash regardless order of data.
-        array_multisort($less_settings);
-        
-        // json_encode() is used because serialize() throws an error with lambda functions.
-        $output_file = substr_replace($output_file, drupal_hash_base64(json_encode($less_settings)) . '.css', -3);
-      }
+      // array_multisort() the data so that the hash returns the same hash regardless order of data.
+      array_multisort($less_settings);
+      
+      // json_encode() is used because serialize() throws an error with lambda functions.
+      $output_file = substr_replace($output_file, drupal_hash_base64(json_encode($less_settings)) . '.css', -3);
       
       $rebuild = FALSE;
       
@@ -188,7 +174,6 @@ function _less_pre_render($styles) {
           // No cache data, force a rebuild for later comparison.
           $rebuild = TRUE;
         }
-        
       }
       
       // $output_file doesn't exist or is flagged for rebuild.
@@ -463,7 +448,7 @@ function _less_file_owner($filepath) {
  * 
  * @param $system_name module or theme system name.
  */
-function less_get_settings($system_name) {
+function less_get_settings($system_name = NULL) {
   global $theme;
   
   $defaults_cache = &drupal_static('less_defaults');
