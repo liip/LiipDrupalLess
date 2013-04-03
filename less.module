@@ -393,6 +393,8 @@ function _less_registry() {
         $system_items = system_list($system_type);
         
         foreach ($system_items as $system_item_name => $system_item) {
+          
+          // Register all globally included .less stylesheets.
           if (!empty($system_item->info['stylesheets'])) {
             foreach ($system_item->info['stylesheets'] as $stylesheets) {
               foreach ($stylesheets as $stylesheet) {
@@ -403,12 +405,26 @@ function _less_registry() {
             }
           }
           
-          // Grab variable defaults from module/theme .info file.
-          if (!empty($system_item->info['less'])) {
-            $static_defaults[$system_item_name] = $system_item->info['less'];
+          // Process LESS settings from .info files.
+          if (isset($system_item->info['less']) && is_array($system_item->info['less'])) {
+            
+            // Register all non-global stylesheets.
+            if (isset($system_item->info['less']['sheets']) && is_array($system_item->info['less']['sheets'])) {
+              
+              $system_item_path = drupal_get_path($system_item->type, $system_item->name);
+              
+              foreach ($system_item->info['less']['sheets'] as $stylesheet) {
+                $static_stylesheets[$system_item_path . '/' . $stylesheet] = $system_item_name;
+              }
+            }
+            
+            // Register variable defaults.
+            if (isset($system_item->info['less']['vars']) && is_array($system_item->info['less']['vars'])) {
+              $static_defaults[$system_item_name] = $system_item->info['less']['vars'];
+            }
           }
           
-          // Invoke hook_less_variables(), assume results are cacheable.
+          // Invoke hook_less_variables(), results should be static.
           if ($module_defaults = module_invoke($system_item_name, 'less_variables')) {
             $static_defaults[$system_item_name] = array_merge((array) $static_defaults[$system_item_name], array_filter($module_defaults));
           }
@@ -452,40 +468,47 @@ function _less_file_owner($filepath) {
  * @param $system_name module or theme system name.
  */
 function less_get_settings($system_name = NULL) {
-  global $theme;
+  $less_settings_static = &drupal_static(__FUNCTION__);
   
-  $defaults_cache = &drupal_static('less_defaults');
-  
-  if (!isset($defaults_cache)) {
-    _less_registry();
+  if (!isset($less_settings_static[$system_name])) {
+    
+    global $theme;
+    
+    $defaults_cache = &drupal_static('less_defaults');
+    
+    if (!isset($defaults_cache)) {
+      _less_registry();
+    }
+    
+    $data = array(
+      'variables' => array(),
+      'functions' => array(
+        'token' => '_less_token_replace',
+      ),
+    );
+    
+    if (!empty($defaults_cache[$system_name])) {
+      $data['variables'] = $defaults_cache[$system_name];
+    }
+    
+    $saved_settings = theme_get_setting('less', $theme);
+    
+    if (!is_null($saved_settings) && !empty($saved_settings[$system_name])) {
+      $data['variables'] = array_merge($data['variables'], array_filter($saved_settings[$system_name]));
+    }
+    
+    drupal_alter('less_variables', $data['variables'], $system_name);
+    
+    if (module_hook($system_name, 'less_functions')) {
+      $data['functions'] = array_merge($data['functions'], (array) module_invoke($system_name, 'less_functions'));
+    }
+    
+    drupal_alter('less_functions', $data['functions'], $system_name);
+    
+    $less_settings_static[$system_name] = $data;
   }
   
-  $data = array(
-    'variables' => array(),
-    'functions' => array(
-      'token' => '_less_token_replace',
-    ),
-  );
-  
-  if (!empty($defaults_cache[$system_name])) {
-    $data['variables'] = $defaults_cache[$system_name];
-  }
-  
-  $saved_settings = theme_get_setting('less', $theme);
-  
-  if (!is_null($saved_settings) && !empty($saved_settings[$system_name])) {
-    $data['variables'] = array_merge($data['variables'], array_filter($saved_settings[$system_name]));
-  }
-  
-  drupal_alter('less_variables', $data['variables'], $system_name);
-  
-  if (module_hook($system_name, 'less_functions')) {
-    $data['functions'] = array_merge($data['functions'], (array) module_invoke($system_name, 'less_functions'));
-  }
-  
-  drupal_alter('less_functions', $data['functions'], $system_name);
-  
-  return $data;
+  return $less_settings_static[$system_name];
 }
 
 /**

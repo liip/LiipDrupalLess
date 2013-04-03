@@ -29,6 +29,10 @@ function less_demo_admin_paths() {
 
 /**
  * Implements hook_less_variables().
+ * 
+ * Variables returned by this function are cached.
+ * 
+ * @see less_demo_less_variables_alter().
  */
 function less_demo_less_variables() {
   return array(
@@ -37,15 +41,35 @@ function less_demo_less_variables() {
 }
 
 /**
+ * Implements hook_less_variables_alter().
+ * 
+ * @param $less_variables
+ * @param $system_name
+ */
+function less_demo_less_variables_alter($less_variables, $system_name) {
+  // dpm(func_get_args());
+}
+
+/**
  * Implements hook_less_functions().
  */
 function less_demo_less_functions() {
   return;
   return array(
-    'url' => function ($args, $less) {
+    'url' => function ($args) {
       return 'blarg';
     },
   );
+}
+
+/**
+ * Implements hook_less_functions_alter().
+ * 
+ * @param $less_functions
+ * @param $system_name
+ */
+function less_demo_less_functions_alter($less_functions, $system_name) {
+  // dpm(func_get_args());
 }
 
 function urlreplacement($args, $less) {
@@ -56,11 +80,9 @@ function _less_demo_page() {
   
   $file_less_settings = array(
     'variables' => array(
-      '@header_to' => '#bada55',
+      '@gradient_end' => '#bada55',
     ),
   );
-  
-  // $less_settings['variables'] = array_merge($less_settings['variables'], $file_less_settings['variables']);
   
   drupal_add_css(drupal_get_path('module', 'less_demo') . '/styles/less_demo.drupal_add_css.css.less', array('less' => $file_less_settings));
   
