@@ -23,8 +23,15 @@ function less_settings($form, &$form_state) {
   $form['less_devel'] = array(
     '#type' => 'checkbox',
     '#title' => t('LESS developer mode'),
-    '#description' => t('Enable the developer mode to ensure LESS files are regenerated every page load, regardless of any change done to the LESS file (which may happen when using the @import notation, and changing only the imported file). Note that this setting does not override "Optimize CSS files" if set via <a href="@performance-url">Performance</a>.', array('@performance-url' => url('admin/config/development/performance'))),
+    '#description' => t('Enable developer mode to ensure LESS files are regenerated every page load.'),
     '#default_value' => variable_get('less_devel', FALSE),
+  );
+  
+  $form['less_watch'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('LESS watch mode'),
+    '#description' => t('Enable watch mode while developer mode is active to automatically reload styles when changes are detected, including changes to @import-ed files. Does not cause a page reload.'),
+    '#default_value' => variable_get('less_watch', TRUE),
   );
   
   $form['#submit'] = array('less_settings_submit');
@@ -33,8 +40,7 @@ function less_settings($form, &$form_state) {
 }
 
 function less_settings_submit($form, &$form_state) {
-  cache_clear_all('less:devel:', 'cache', TRUE);
-  cache_clear_all('less:watch:', 'cache', TRUE);
+  cache_clear_all('less:', 'cache', TRUE);
 }
 
 function _flush_less($form, &$form_state) {

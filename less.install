@@ -11,9 +11,13 @@ function less_enable() {
   drupal_theme_rebuild();
 }
 
+/**
+ * Implements hook_install().
+ */
 function less_uninstall() {
   variable_del('less_devel');
   variable_del('less_dir');
+  variable_del('less_watch');
   cache_clear_all('less:', 'cache', TRUE);
 }
 
@@ -25,12 +29,9 @@ function less_uninstall() {
 function less_requirements($phase) {
   $requirements = array();
   
-  $lessc_exists = FALSE;
-  
   module_load_include('module', 'less');
-  if (function_exists('_less_inc')) {
-    $lessc_exists = _less_inc();
-  }
+  
+  $lessc_exists = function_exists('_less_inc') ? _less_inc() : FALSE;
   
   switch ($phase) {
     case 'runtime':

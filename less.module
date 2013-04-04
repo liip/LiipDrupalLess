@@ -128,7 +128,9 @@ function _less_pre_render($styles) {
   
   if ($less_devel) {
     
-    drupal_add_js(drupal_get_path('module', 'less') . '/less.watch.js');
+    if (variable_get('less_watch', TRUE)) {
+      drupal_add_js(drupal_get_path('module', 'less') . '/less.watch.js');
+    }
     
     // Warn users once every hour that less is checking for file modifications.
     if (user_access(LESS_PERMISSION) && flood_is_allowed('less_devel_warning', 1)) {
@@ -229,6 +231,7 @@ function _less_pre_render($styles) {
         // Since lessphp is a php class, this will capture errors for output.
         try {
           if ($less_devel) {
+            $less->setPreserveComments(true);
             $cache = $less->cachedCompile($input_file);
             cache_set('less:devel:' . drupal_hash_base64($input_file), $cache['files']);
             $output_data = $cache['compiled'];
