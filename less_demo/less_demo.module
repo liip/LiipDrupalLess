@@ -77,6 +77,9 @@ function urlreplacement($args, $less) {
 }
 
 function _less_demo_page() {
+  global $theme;
+  
+  $output = '';
   
   $file_less_settings = array(
     'variables' => array(
@@ -86,5 +89,12 @@ function _less_demo_page() {
   
   drupal_add_css(drupal_get_path('module', 'less_demo') . '/styles/less_demo.drupal_add_css.css.less', array('less' => $file_less_settings));
   
-  return '<div id="less_demo_gradient"><div class="less_demo_logo"></div><p>This is some text.</p></div>';
+  $output .= '<div class="less_demo_logo"></div>';
+  
+  $output .= '<p>' . l('Configure current theme', 'admin/appearance/settings/' . $theme) . '</p>';
+  
+  // wrap
+  $output = '<div id="less_demo_gradient">' . $output . '</div>';
+  
+  return $output;
 }

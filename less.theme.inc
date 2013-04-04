@@ -21,8 +21,8 @@ function less_form_system_theme_settings_alter(&$form, &$form_state) {
     
     $theme_items = system_list('theme');
     
-    if (isset($theme_items[$theme_key]) && !empty($theme_items[$theme_key]->info['less'])) {
-      $less_settings_form[$theme_key] = _less_setting_form_element($theme_key, $theme_items[$theme_key]->info['less'], $saved_settings[$theme_key]);
+    if (isset($theme_items[$theme_key]) && !empty($theme_items[$theme_key]->info['less']['vars'])) {
+      $less_settings_form[$theme_key] = _less_setting_form_element($theme_key, $theme_items[$theme_key]->info['less']['vars'], $saved_settings[$theme_key]);
     }
     
     // showing settings form for modules
@@ -31,8 +31,8 @@ function less_form_system_theme_settings_alter(&$form, &$form_state) {
     $less_module_settings = array();
     
     foreach ($system_items as $system_item_name => $system_item) {
-      if (!empty($system_item->info['less'])) {
-        $less_module_settings[$system_item_name] = _less_setting_form_element($system_item_name, $system_item->info['less'], $saved_settings[$system_item_name], $system_item->info['name']);
+      if (!empty($system_item->info['less']['vars'])) {
+        $less_module_settings[$system_item_name] = _less_setting_form_element($system_item_name, $system_item->info['less']['vars'], $saved_settings[$system_item_name], $system_item->info['name']);
       }
     }
     
