@@ -12,21 +12,19 @@
  */
 function less_wysiwyg_editor_settings_alter(&$settings, $context) {
   
-  $wysiwyg = NULL;
+  $wysiwyg = $context['editor']['name'];
   $stylesheets = array();
   
-  // Figure out which WYSIWYG is in use, each has their own list of stylesheets.
-  if (isset($settings['content_css'])) {
-    $wysiwyg = 'tinymce';
-    $stylesheets = explode(',', $settings['content_css']);
-  }
-  elseif (isset($settings['EditorAreaCSS'])) {
-    $wysiwyg = 'fckeditor';
-    $stylesheets = explode(',', $settings['EditorAreaCSS']);
-  }
-  elseif (isset($settings['contentsCss'])) {
-    $wysiwyg = 'ckeditor';
-    $stylesheets = $settings['contentsCss'];
+  switch ($wysiwyg) {
+    case 'tinymce':
+      $stylesheets = explode(',', $settings['content_css']);
+      break;
+    case 'fckeditor':
+      $stylesheets = explode(',', $settings['EditorAreaCSS']);
+      break;
+    case 'ckeditor':
+      $stylesheets = $settings['contentsCss'];
+      break;
   }
   
   if (!empty($stylesheets)) {
@@ -35,34 +33,33 @@ function less_wysiwyg_editor_settings_alter(&$settings, $context) {
       '#items' => array(),
     );
     
-    foreach ($stylesheets as $css_file) {
-      $styles['#items'][$css_file] = array(
-        'data' => trim($css_file, '/'),
+    foreach ($stylesheets as $stylesheet) {
+      $styles['#items'][$stylesheet] = array(
+        // Paths are expected to be relative to DRUPAL_ROOT.
+        'data' => trim($stylesheet, '/'),
       );
     }
     
     $styles = _less_pre_render($styles);
 
-    $stylesheets = array();
+    $processed_stylesheets = array();
 
     foreach ($styles['#items'] as $file) {
-      $stylesheets[] = file_create_url($file['data']);
+      $processed_stylesheets[] = file_create_url($file['data']);
     }
     
+    switch ($wysiwyg) {
+      case 'tinymce':
+        $settings['content_css'] = implode(',', $processed_stylesheets);
+        break;
+      case 'fckeditor':
+        $settings['EditorAreaCSS'] = implode(',', $processed_stylesheets);
+        break;
+      case 'ckeditor':
+        $settings['contentsCss'] = $processed_stylesheets;
+        break;
+    }
   }
-  
-  switch ($wysiwyg) {
-    case 'tinymce':
-      $settings['content_css'] = implode(',', $stylesheets);
-      break;
-    case 'fckeditor':
-      $settings['EditorAreaCSS'] = implode(',', $stylesheets);
-      break;
-    case 'ckeditor':
-      $settings['contentsCss'] = $stylesheets;
-      break;
-  }
-  
 }
 
 function less_form_wysiwyg_profile_form_alter(&$form, $form_state, $form_id) {
