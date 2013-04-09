@@ -8,7 +8,6 @@
  * Implements HOOK_enable().
  */
 function less_enable() {
-  drupal_theme_rebuild();
 }
 
 /**
