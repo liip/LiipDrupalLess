@@ -89,12 +89,13 @@ function less_element_info_alter(&$type) {
   array_unshift($type['styles']['#pre_render'], '_less_pre_render');
   
   if (variable_get('less_devel', FALSE)) {
+    // Must run after drupal_pre_render_styles() to attach any attributes.
     array_push($type['styles']['#pre_render'], '_less_attach_src');
   }
 }
 
 /**
- * Add original .less file path as src to <link />.
+ * Add original .less file path as 'src' attribute to <link />.
  */
 function _less_attach_src($styles) {
   
@@ -124,7 +125,7 @@ function _less_attach_src($styles) {
 function _less_pre_render($styles) {
   
   $less_devel = variable_get('less_devel', FALSE);
-  $less_dir = variable_get('less_dir', '');
+  $less_dir = _less_get_dir();
   
   if ($less_devel) {
     
@@ -150,21 +151,11 @@ function _less_pre_render($styles) {
       
       $file_uri = file_uri_target($input_file);
       $css_path = $less_path . '/' . dirname($file_uri ? $file_uri : $input_file);
-
-      if (!is_dir($css_path) && !file_prepare_directory($css_path, FILE_CREATE_DIRECTORY)) {
-        
-        // There is a problem with the directory.
-        $message = 'LESS could not create a directory in %dir';
-        $message_vars = array('%dir' => $css_path);
-        
-        watchdog('LESS', $message, $message_vars, WATCHDOG_ERROR);
-        
-        if (user_access(LESS_PERMISSION)) {
-          drupal_set_message(t($message, $message_vars), 'error', FALSE);
-        }
-        
-        // Need to return $styles, regardless if they were altered.
-        return $styles;
+      
+      // Ensure the destination directory exists.
+      if (!_less_ensure_directory($css_path)) {
+        // Cancel the for each loop when directory doesn't exist.
+        break;
       }
 
       $output_file = $css_path . '/' . basename($input_file, '.less');
@@ -593,4 +584,46 @@ function _less_watch() {
   
   drupal_json_output($changed_files);
   
+}
+
+/**
+ * Helper function that attempts to create a folder if it doesn't exist.
+ * Locks are used to help avoid concurrency collisions.
+ */
+function _less_ensure_directory($directory_path) {
+  
+  $is_dir = is_dir($directory_path);
+  
+  if (!$is_dir) {
+    
+    $lock_id = 'less_directory_' . md5($directory_path);
+    
+    // Attempt to create directory only 3 times, else delay is too long.
+    for ($i = 0; $i < 3; $i++) {
+      
+      if (lock_acquire($lock_id) && $is_dir = file_prepare_directory($directory_path, FILE_CREATE_DIRECTORY)) {
+        // Creation was successful, cancel the 'for' loop;
+        break;
+      }
+      
+      lock_wait($lock_id, 1);
+    }
+    
+    lock_release($lock_id);
+    
+    if (!$is_dir) {
+      // There is a problem with the directory.
+      $message = 'LESS could not create a directory in %dir';
+      $message_vars = array('%dir' => $directory_path);
+      
+      watchdog('LESS', $message, $message_vars, WATCHDOG_ERROR);
+      
+      if (user_access(LESS_PERMISSION)) {
+        drupal_set_message(t($message, $message_vars), 'error', FALSE);
+      }
+      
+    }
+  }
+  
+  return $is_dir;
 }
