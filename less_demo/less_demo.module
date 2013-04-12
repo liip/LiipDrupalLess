@@ -30,6 +30,7 @@ function less_demo_admin_paths() {
 /**
  * Implements hook_less_variables().
  * 
+ * Should return flat associative array, where key is variable name.
  * Variables returned by this function are cached.
  * 
  * @see less_demo_less_variables_alter().
@@ -44,10 +45,13 @@ function less_demo_less_variables() {
  * Implements hook_less_variables_alter().
  * 
  * @param $less_variables
- * @param $system_name
+ *   Flat associative array of variables, where key is variable name.
+ * @param $context
+ *   Array containing one value, the system_name of the module or theme that
+ *   this applies to: array('system_name' => $system_name);
  */
-function less_demo_less_variables_alter($less_variables, $system_name) {
-  // dpm(func_get_args());
+function less_demo_less_variables_alter(&$less_variables, $context) {
+  dpm(func_get_args());
 }
 
 /**
@@ -66,9 +70,14 @@ function less_demo_less_functions() {
  * Implements hook_less_functions_alter().
  * 
  * @param $less_functions
- * @param $system_name
+ *   Flat associative array of functions, where key is variable and value is
+ *   function name or Anonymous function: 
+ *   (http://php.net/manual/en/functions.anonymous.php)
+ * @param $context
+ *   Array containing one value, the system_name of the module or theme that
+ *   this applies to: array('system_name' => $system_name);
  */
-function less_demo_less_functions_alter($less_functions, $system_name) {
+function less_demo_less_functions_alter($less_functions, $context) {
   // dpm(func_get_args());
 }
 
