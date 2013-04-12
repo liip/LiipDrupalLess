@@ -390,8 +390,8 @@ function _less_rewrite_paths($input_filepath, $contents) {
 }
 
 /**
- * This keeps track of which modules and themes own which .less files,
- * and any variable defaults those modules define.
+ * This keeps track of which modules and themes own which .less files, and any
+ * variable defaults those system items define.
  * 
  * Only tracks .less files that are added through .info files.
  */
@@ -487,7 +487,8 @@ function _less_file_owner($filepath) {
 /**
  * Returns the compiled list of variables and functions for a module/theme.
  * 
- * @param $system_name module or theme system name.
+ * @param $system_name
+ *   Module or theme system name.
  */
 function less_get_settings($system_name = NULL) {
   // Use the advanced drupal_static() pattern, since this is called very often.
@@ -500,6 +501,8 @@ function less_get_settings($system_name = NULL) {
   if (!isset($less_settings_static[$system_name])) {
     
     global $theme;
+    
+    $theme_settings = theme_get_setting('less', $theme);
     
     $defaults_cache = &drupal_static('less_defaults');
     
@@ -514,25 +517,39 @@ function less_get_settings($system_name = NULL) {
       ),
     );
     
+    
+    /**
+     * Compile the LESS variables.
+     */
+    // Cached default variables from .info files and hook_less_variables().
     if (!empty($defaults_cache[$system_name])) {
       $data['variables'] = array_merge($data['variables'], array_filter($defaults_cache[$system_name]));
     }
     
-    $saved_settings = theme_get_setting('less', $theme);
-    
-    if (!is_null($saved_settings) && !empty($saved_settings[$system_name])) {
-      $data['variables'] = array_merge($data['variables'], array_filter($saved_settings[$system_name]));
+    // Saved variable values from current theme.
+    if (!is_null($theme_settings) && !empty($theme_settings[$system_name])) {
+      $data['variables'] = array_merge($data['variables'], array_filter($theme_settings[$system_name]));
     }
     
     // Invoke hook_less_variables_alter().
-    drupal_alter('less_variables', $data['variables'], $system_name);
+    $alter_system_name = array('system_name' => $system_name);
+    drupal_alter('less_variables', $data['variables'], $alter_system_name);
     
+    
+    /**
+     * Grab the LESS functions.
+     * 
+     * LESS functions are not stored in the cache table since they could be
+     * anonymous functions.
+     */
     if (module_hook($system_name, 'less_functions')) {
       $data['functions'] = array_merge($data['functions'], (array) module_invoke($system_name, 'less_functions'));
     }
     
     // Invoke hook_less_functions_alter().
-    drupal_alter('less_functions', $data['functions'], $system_name);
+    $alter_system_name = array('system_name' => $system_name);
+    drupal_alter('less_functions', $data['functions'], $alter_system_name);
+    
     
     $less_settings_static[$system_name] = $data;
   }
