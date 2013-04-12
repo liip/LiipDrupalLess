@@ -51,7 +51,7 @@ function less_demo_less_variables() {
  *   this applies to: array('system_name' => $system_name);
  */
 function less_demo_less_variables_alter(&$less_variables, $context) {
-  dpm(func_get_args());
+  // dpm(func_get_args());
 }
 
 /**
