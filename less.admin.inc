@@ -6,7 +6,7 @@
  *
  */
 
-function less_settings($form, &$form_state) {
+function less_settings_form($form, &$form_state) {
 
   $form['less_flush'] = array(
     '#type' => 'fieldset',
@@ -32,14 +32,19 @@ function less_settings($form, &$form_state) {
     '#title' => t('LESS watch mode'),
     '#description' => t('Enable watch mode while developer mode is active to automatically reload styles when changes are detected, including changes to @import-ed files. Does not cause a page reload.'),
     '#default_value' => variable_get('less_watch', TRUE),
+    '#states' => array(
+      'disabled' => array(
+        ':input[name="less_devel"]' => array('unchecked' => TRUE),
+      ),
+    ),
   );
   
-  $form['#submit'] = array('less_settings_submit');
+  $form['#submit'] = array('less_settings_form_submit');
   
   return system_settings_form($form);
 }
 
-function less_settings_submit($form, &$form_state) {
+function less_settings_form_submit($form, &$form_state) {
   cache_clear_all('less:', 'cache', TRUE);
 }
 

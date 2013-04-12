@@ -47,7 +47,7 @@ function less_menu() {
     'title' => 'LESS settings',
     'description' => 'Administer LESS settings',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('less_settings'),
+    'page arguments' => array('less_settings_form'),
     'access arguments' => array(LESS_PERMISSION),
     'file' => 'less.admin.inc',
     'type' => MENU_NORMAL_ITEM,
