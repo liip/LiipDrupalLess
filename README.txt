@@ -17,7 +17,7 @@ http://leafo.net/lessphp/docs/
 
 File placement:
 If your source file was "sites/all/modules/test/test.css.less"
-Then your compiled file will be "sites/[yoursite_or_default]/files/less/[random.string]/sites/all/modules/test/test.css"
+Then your compiled file will be "sites/[yoursite]/files/less/[random.string]/sites/all/modules/test/test.css"
 
 Use:
 The following two examples provide equivalent functionality.
@@ -34,6 +34,10 @@ drupal_add_css($module_path . '/styles/less_demo.css.less');
 
 stylesheets[all][] = styles/less_demo.css.less
 
+For automatic variable and function association with non globally added
+stylesheets, you can associate a stylesheet using this notation in .info files:
+
+less[sheets][] = relative/path/to/stylesheet.css.less
 
 Compatibility:
 
@@ -46,3 +50,13 @@ RTL Support:
 RTL support will work as long as your file names end with ".css.less".
 
 Assuming your file is named "somename.css.less", Drupal automatically looks for a file name "somename-rtl.css.less"
+
+Variables and Functions:
+
+Variable defaults can be defined in .info files for modules or themes. Any variables defined will be automatically available inside style sheets associated with the module or theme.
+
+.info file:
+
+less[vars][@varname] = #bada55
+
+Look in less.api.php for LESS Variable and Function hooks.
