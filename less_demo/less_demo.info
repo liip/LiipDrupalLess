@@ -4,6 +4,8 @@ description = "Demonstrate LESS module functionality and implementation examples
 
 core = 7.x
 
+dependencies[] = less
+
 configure = admin/config/development/less/demo
 
 ; Sheets with .less extension will automatically receive variables below.
