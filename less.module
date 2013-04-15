@@ -531,9 +531,12 @@ function less_get_settings($system_name = NULL) {
       $data['variables'] = array_merge($data['variables'], array_filter($theme_settings[$system_name]));
     }
     
+    // Prevent $system_name from being altered.
+    $alter_system_name = $system_name;
     // Invoke hook_less_variables_alter().
-    $alter_system_name = array('system_name' => $system_name);
     drupal_alter('less_variables', $data['variables'], $alter_system_name);
+    // Invoke hook_less_variables_SYSTEM_NAME_alter().
+    drupal_alter('less_variables_' . $system_name, $data['variables']);
     
     
     /**
@@ -546,9 +549,12 @@ function less_get_settings($system_name = NULL) {
       $data['functions'] = array_merge($data['functions'], (array) module_invoke($system_name, 'less_functions'));
     }
     
+    // Prevent $system_name from being altered.
+    $alter_system_name = $system_name;
     // Invoke hook_less_functions_alter().
-    $alter_system_name = array('system_name' => $system_name);
     drupal_alter('less_functions', $data['functions'], $alter_system_name);
+    // Invoke hook_less_functions_system_name_alter().
+    drupal_alter('less_functions_' . $system_name, $data['functions']);
     
     
     $less_settings_static[$system_name] = $data;
