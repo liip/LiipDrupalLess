@@ -251,6 +251,9 @@ function _less_pre_render($styles) {
           $output_data = _less_rewrite_paths($input_file, $output_data);
           
           file_unmanaged_save_data($output_data, $output_file, FILE_EXISTS_REPLACE);
+
+          // Hack to retrieve the output css file to add it in the ckeditor module
+          cache_set('less:compiled_file_name:' . $input_file, $output_file);
         }
 
       }
@@ -271,11 +274,6 @@ function _less_pre_render($styles) {
           // 'preprocess' being FALSE generates a discreet <link /> rather than an @import.
           $styles['#items'][$key]['preprocess'] = FALSE;
         }
-
-        // Hack to retrieve the output css file to add it in the ckeditor module
-        $less_compiled_files = variable_get('less_compiled_files', array());
-        $less_compiled_files[$input_file] = $output_file;
-        variable_set('less_compiled_files', $less_compiled_files);
       }
 
     }
